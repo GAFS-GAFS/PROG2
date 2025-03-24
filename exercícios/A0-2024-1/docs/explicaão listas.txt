@@ -1,0 +1,226 @@
+Lista simplesmente encadeada vs. Lista duplamente encadeada
+
+Lista simplesmente encadeada: Cada nó aponta apenas para o próximo nó.
+
+Lista duplamente encadeada: Cada nó possui dois ponteiros, um para o próximo nó e outro para o anterior.
+
+Lista com sentinela: Possui um nó extra (sentinela) que facilita operações como inserção e remoção.
+
+Lista sem sentinela: O primeiro nó da lista é um nó válido com dados.
+
+Lista linear: O último nó aponta para NULL.
+
+Lista circular: O último nó aponta para o primeiro, formando um ciclo.
+
+=======================================================================================================================================================================
+
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct Node {
+    int data;
+    struct Node* next;
+} Node;
+
+void printList(Node* head) {
+    Node* current = head;
+    while (current) {
+        printf("%d -> ", current->data);
+        current = current->next;
+    }
+    printf("NULL\n");
+}
+
+void insertFront(Node** head, int data) {
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    newNode->data = data;
+    newNode->next = *head;
+    *head = newNode;
+}
+
+int main() {
+    Node* head = NULL;
+    insertFront(&head, 10);
+    insertFront(&head, 20);
+    insertFront(&head, 30);
+    printList(head);
+    return 0;
+}
+
+=========================================================================================================================
+
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct Node {
+    int data;
+    struct Node* prev;
+    struct Node* next;
+} Node;
+
+void printList(Node* head) {
+    Node* current = head;
+    while (current) {
+        printf("%d <-> ", current->data);
+        current = current->next;
+    }
+    printf("NULL\n");
+}
+
+void insertFront(Node** head, int data) {
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    newNode->data = data;
+    newNode->prev = NULL;
+    newNode->next = *head;
+    if (*head != NULL) (*head)->prev = newNode;
+    *head = newNode;
+}
+
+int main() {
+    Node* head = NULL;
+    insertFront(&head, 10);
+    insertFront(&head, 20);
+    insertFront(&head, 30);
+    printList(head);
+    return 0;
+}
+
+======================================================================================================================================================================
+
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct Node {
+    int data;
+    struct Node* next;
+} Node;
+
+Node* createSentinelList() {
+    Node* sentinel = (Node*)malloc(sizeof(Node));
+    sentinel->next = NULL;
+    return sentinel;
+}
+
+void insert(Node* sentinel, int data) {
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    newNode->data = data;
+    newNode->next = sentinel->next;
+    sentinel->next = newNode;
+}
+
+void printList(Node* sentinel) {
+    Node* current = sentinel->next;
+    while (current) {
+        printf("%d -> ", current->data);
+        current = current->next;
+    }
+    printf("NULL\n");
+}
+
+int main() {
+    Node* sentinel = createSentinelList();
+    insert(sentinel, 10);
+    insert(sentinel, 20);
+    insert(sentinel, 30);
+    printList(sentinel);
+    return 0;
+}
+
+=======================================================================================================================================================================
+
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct Node {
+    int data;
+    struct Node* next;
+} Node;
+
+void printList(Node* head) {
+    if (!head) return;
+    Node* temp = head;
+    do {
+        printf("%d -> ", temp->data);
+        temp = temp->next;
+    } while (temp != head);
+    printf("(volta ao início)\n");
+}
+
+void insert(Node** head, int data) {
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    newNode->data = data;
+    if (!*head) {
+        newNode->next = newNode;
+        *head = newNode;
+        return;
+    }
+    Node* temp = *head;
+    while (temp->next != *head)
+        temp = temp->next;
+    temp->next = newNode;
+    newNode->next = *head;
+}
+
+int main() {
+    Node* head = NULL;
+    insert(&head, 10);
+    insert(&head, 20);
+    insert(&head, 30);
+    printList(head);
+    return 0;
+}
+
+======================================================================================================================================================================
+
+Uma lista circular duplamente encadeada é uma combinação de uma lista circular e uma lista duplamente encadeada. Isso significa que:
+
+Cada nó possui dois ponteiros: um para o próximo nó e outro para o anterior.
+
+O último nó aponta para o primeiro, e o primeiro aponta para o último, formando um círculo.
+
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct Node {
+    int data;
+    struct Node* next;
+    struct Node* prev;
+} Node;
+
+void insert(Node** head, int data) {
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    newNode->data = data;
+
+    if (*head == NULL) {
+        newNode->next = newNode;
+        newNode->prev = newNode;
+        *head = newNode;
+        return;
+    }
+
+    Node* tail = (*head)->prev;
+    tail->next = newNode;
+    newNode->prev = tail;
+    newNode->next = *head;
+    (*head)->prev = newNode;
+}
+
+void printList(Node* head) {
+    if (!head) return;
+    Node* temp = head;
+    do {
+        printf("%d <-> ", temp->data);
+        temp = temp->next;
+    } while (temp != head);
+    printf("(volta ao início)\n");
+}
+
+int main() {
+    Node* head = NULL;
+    insert(&head, 10);
+    insert(&head, 20);
+    insert(&head, 30);
+    printList(head);
+    return 0;
+}
+

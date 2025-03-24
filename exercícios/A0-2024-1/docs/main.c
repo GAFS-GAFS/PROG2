@@ -13,13 +13,47 @@ typedef struct teddy_machine {
 
 /* List functions */
 
-teddy_machine* create_list (unsigned int machines){ /* INSTRUÇÃO: Implemente a função */ }
+teddy_machine* create_list (unsigned int machines)
+{ 
+    if (!machines)
+    {
+        return (0);
+    }
 
-teddy_machine* select_machine (teddy_machine *list, unsigned int place){ /* INSTRUÇÃO: Implemente a função */ }
+    teddy_machine *list;
+    
+    list = (teddy_machine*)malloc(sizeof(teddy_machine));
 
-teddy_machine* remove_machine (teddy_machine *list, teddy_machine *remove) { /* INSTRUÇÃO: Implemente a função */ }
+    if(!list)
+    {
+        return (0);
+    }
 
-void destroy_list (teddy_machine *list){/* INSTRUÇÃO: Implemente a função */ }
+    list->id = machines;
+    list->probability = 5;
+    list->next = 0;
+    teddy_machine *aux = list;
+
+    for(int i = machines -1; i > 0; i--)
+    {
+        list->previous = (struct teddy_machine*) malloc (sizeof(teddy_machine));
+        ((teddy_machine*)(list->previous))->id = i;
+        ((teddy_machine*)(list->previous))->probability = 5;
+        ((teddy_machine*)(list->previous))->next = (struct teddy_machine*) list;
+        list = (teddy_machine*) list->previous;
+    }
+
+    list->previous = (struct teddy_machine*) aux;
+    aux->next = (struct teddy_machine*)list;
+
+    return (list);
+}
+
+teddy_machine* select_machine (teddy_machine *list, unsigned int place){ /* INSTRUï¿½ï¿½O: Implemente a funï¿½ï¿½o */ }
+
+teddy_machine* remove_machine (teddy_machine *list, teddy_machine *remove) { /* INSTRUï¿½ï¿½O: Implemente a funï¿½ï¿½o */ }
+
+void destroy_list (teddy_machine *list){/* INSTRUï¿½ï¿½O: Implemente a funï¿½ï¿½o */ }
 
 /* Randomization functions */
 
@@ -83,11 +117,11 @@ int main(int argc, char *argv[]){
     unsigned int machine_place, machine_attempt;
     for (unsigned int r = 0; r < rounds; r++){
         printf("\n============================ ROUND %u ============================\n", r+1);
-        machine_place = get_place(machines); /* Define a localização da máquina da rodada, não considera máquinas sem urso */
-        machine_attempt = get_attempt(); /* Define a tentativa da rodada; se for menor ou igual à probabilidade da máquina selecionada, o urso foi pego */
+        machine_place = get_place(machines); /* Define a localizaï¿½ï¿½o da mï¿½quina da rodada, nï¿½o considera mï¿½quinas sem urso */
+        machine_attempt = get_attempt(); /* Define a tentativa da rodada; se for menor ou igual ï¿½ probabilidade da mï¿½quina selecionada, o urso foi pego */
 
-        /* INSTRUÇÃO: Implemente a lógica do seu programa aqui */
-        /* INSTRUÇÃO: Utilize a função "print_attempt" antes do "print_available_machines"! */
+        /* INSTRUï¿½ï¿½O: Implemente a lï¿½gica do seu programa aqui */
+        /* INSTRUï¿½ï¿½O: Utilize a funï¿½ï¿½o "print_attempt" antes do "print_available_machines"! */
 
         print_available_machines(list);
         printf("==================================================================\n");
