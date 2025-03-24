@@ -39,16 +39,28 @@ teddy_machine* create_list (unsigned int machines){
 
 teddy_machine* select_machine (teddy_machine *list, unsigned int place){
 
-    if (!list) return NULL;
+    if (!list) 
+    {
+        return NULL;
+    }
+
     teddy_machine *selection = list;
-    for (unsigned int i = 0; i < place; i++) selection = (teddy_machine*) selection->next;
+    
+    for (unsigned int i = 0; i < place; i++) 
+    {
+    selection = (teddy_machine*) selection->next;
+    }
 
     return selection;
 }
 
 teddy_machine* remove_machine (teddy_machine *list, teddy_machine *remove) {
 
-    if (!list || !remove) return NULL;
+    if (!list || !remove) 
+    {
+        return NULL;
+    }
+    
     if (remove == list){
         if (remove->next == (struct teddy_machine*) list){
             free(remove);
@@ -132,8 +144,8 @@ int main(int argc, char *argv[]){
     unsigned int machine_place, machine_attempt;
     for (unsigned int r = 0; r < rounds; r++){
         
-        machine_place = get_place(machines); /* Define a localização da máquina da rodada, não considera máquinas sem urso */
-        machine_attempt = get_attempt(); /* Define a tentativa da rodada; se for menor ou igual à probabilidade da máquina selecionada, o urso foi pego */
+        machine_place = get_place(machines); /* Define a localizaï¿½ï¿½o da mï¿½quina da rodada, nï¿½o considera mï¿½quinas sem urso */
+        machine_attempt = get_attempt(); /* Define a tentativa da rodada; se for menor ou igual ï¿½ probabilidade da mï¿½quina selecionada, o urso foi pego */
 
         round_machine = select_machine(list, machine_place);
         if (round_machine){
