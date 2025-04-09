@@ -6,6 +6,7 @@
 jukefila *criar_jukefila()
 {
     jukefila *fila = (jukefila *)malloc(sizeof(jukefila));
+    // se usar calloc, os ponteiros inicim com 0, e a fila inicia como NULL
 
     if (!fila)
     {
@@ -43,6 +44,33 @@ void inserir_jukefila(pedido *elemento, jukefila *fila)
     elemento->proximo = new_music->proximo;
     new_music->proximo = elemento;
 }
+/*
+    void inserir_jukefila(pedido *elemento, jukefila *fila)
+
+    if((!fila) || (!elemento))
+    {
+        return;
+    }
+
+    if (!fila->inicio)
+    {
+        fila->inicio = elemento;
+        fila->final = elemento;
+        return;
+    }
+
+    pedido *i;
+
+    for (i = fila->inicio; ((i) && (i->valor <= elemento->valor)); i = i->proximo){
+
+        if (!i)
+        {
+            elemento->proximo = i;
+            i->anterior = elemento;
+            fila->inicio = elemento;
+        }
+    }
+*/
 
 pedido *consumir_jukefila(jukefila *fila)
 {
