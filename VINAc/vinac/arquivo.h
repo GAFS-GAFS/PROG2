@@ -1,8 +1,8 @@
 #ifndef ARQUIVO_H
 #define ARQUIVO_H
 
-#include "stdio.h"
-#include "time.h"
+#include <stdio.h>
+#include <time.h>
 
 typedef struct {
     char nome[256];           // Nome do arquivo original
