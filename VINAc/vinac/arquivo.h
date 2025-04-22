@@ -2,6 +2,8 @@
 #define ARQUIVO_H
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 // Estrutura que representa um arquivo armazenado no arquivador .vc.
