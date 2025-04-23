@@ -6,6 +6,8 @@
 #include <stdlib.h>  
 #include <string.h> 
 #include <time.h> 
+#include <dirent.h>
+#include "lz.h"   
 
 // Estrutura representando um arquivo no .vc
 

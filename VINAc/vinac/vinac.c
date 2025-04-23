@@ -1,8 +1,4 @@
 #include "vinac.h"
-#include <stdio.h>
-#include <string.h>
-#include "diretorio.h"
-#include "arquivo.h"
 
 // Insere arquivos no arquivador .vc.
 void vinac_insert(int argc, char *argv[], int compress) {
@@ -12,6 +8,13 @@ void vinac_insert(int argc, char *argv[], int compress) {
     }
 
     const char* arquivoVC = argv[2];
+
+    // Se o arquivo não for especificado, usa o nome padrão "archive.vc"
+    if (strcmp(arquivoVC, "") == 0) {
+        arquivoVC = "archive.vc";
+        printf("Nenhum arquivo especificado. Usando o nome padrão '%s'.\n", arquivoVC);
+    }
+
     FILE* vc = fopen(arquivoVC, "r+b");
 
     // Se o arquivo não existir, cria um novo
@@ -21,6 +24,7 @@ void vinac_insert(int argc, char *argv[], int compress) {
             fprintf(stderr, "Erro ao criar/abrir %s\n", arquivoVC);
             return;
         }
+        printf("Arquivo '%s' criado com sucesso.\n", arquivoVC);
     }
 
     // Inicializa o índice
@@ -61,6 +65,13 @@ void vinac_remove(int argc, char *argv[]) {
     }
 
     const char* arquivoVC = argv[2];
+
+    // Se o arquivo não for especificado, usa o nome padrão "archive.vc"
+    if (strcmp(arquivoVC, "") == 0) {
+        arquivoVC = "archive.vc";
+        printf("Nenhum arquivo especificado. Usando o nome padrão '%s'.\n", arquivoVC);
+    }
+
     FILE* vc = fopen(arquivoVC, "r+b");
     if (!vc) {
         fprintf(stderr, "Erro ao abrir o arquivo %s\n", arquivoVC);
@@ -95,13 +106,21 @@ void vinac_remove(int argc, char *argv[]) {
     fclose(vc);
 }
 
+// Lista todos os arquivos presentes no arquivador .vc.
 void vinac_list(int argc, char *argv[]) {
-    if (argc < 3) {  // Corrigido para verificar se o arquivo foi fornecido
+    if (argc < 3) {
         fprintf(stderr, "Uso: vinac -c arquivo.vc\n");
         return;
     }
 
-    const char* arquivoVC = argv[2];  // Corrigido para pegar o nome do arquivo
+    const char* arquivoVC = argv[2];
+
+    // Se o arquivo não for especificado, usa o nome padrão "archive.vc"
+    if (strcmp(arquivoVC, "") == 0) {
+        arquivoVC = "archive.vc";
+        printf("Nenhum arquivo especificado. Usando o nome padrão '%s'.\n", arquivoVC);
+    }
+
     FILE* vc = fopen(arquivoVC, "rb");
     if (!vc) {
         fprintf(stderr, "Erro ao abrir o arquivo %s\n", arquivoVC);
@@ -135,6 +154,13 @@ void vinac_extract(int argc, char *argv[]) {
     }
 
     const char* arquivoVC = argv[2];
+
+    // Se o arquivo não for especificado, usa o nome padrão "archive.vc"
+    if (strcmp(arquivoVC, "") == 0) {
+        arquivoVC = "archive.vc";
+        printf("Nenhum arquivo especificado. Usando o nome padrão '%s'.\n", arquivoVC);
+    }
+
     FILE* vc = fopen(arquivoVC, "rb");
     if (!vc) {
         fprintf(stderr, "Erro ao abrir o arquivo %s\n", arquivoVC);
@@ -179,6 +205,7 @@ void vinac_extract(int argc, char *argv[]) {
     fclose(vc);
 }
 
+// Move a posição lógica de um arquivo dentro do arquivador.
 void vinac_move(int argc, char *argv[]) {
     if (argc < 5) {
         fprintf(stderr, "Uso: vinac -m arquivo.vc posicao_atual nova_posicao\n");
@@ -186,6 +213,13 @@ void vinac_move(int argc, char *argv[]) {
     }
 
     const char* arquivoVC = argv[2];
+
+    // Se o arquivo não for especificado, usa o nome padrão "archive.vc"
+    if (strcmp(arquivoVC, "") == 0) {
+        arquivoVC = "archive.vc";
+        printf("Nenhum arquivo especificado. Usando o nome padrão '%s'.\n", arquivoVC);
+    }
+
     int posicaoAtual = atoi(argv[3]);
     int novaPosicao = atoi(argv[4]);
 
