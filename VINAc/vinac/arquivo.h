@@ -1,53 +1,32 @@
 #ifndef ARQUIVO_H
 #define ARQUIVO_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include <stddef.h>  
+#include <stdio.h>   
+#include <stdlib.h>  
+#include <string.h> 
+#include <time.h> 
 
-// Estrutura que representa um arquivo armazenado no arquivador .vc.
+// Estrutura representando um arquivo no .vc
 
 typedef struct {
-    char nome[256];            // Nome do arquivo original
-    unsigned int tamanho;      // Tamanho original em bytes
-    unsigned int comprimido;   // Tamanho após compressão (ou igual ao original)
-    int estaComprimido;        // 1 = comprimido, 0 = não comprimido
-    time_t dataInsercao;       // Data e hora da inserção no arquivador
-    long offsetDados;          // Offset no .vc onde os dados do arquivo estão
+    char nome[256];            // Nome do arquivo original (sem espaços)
+    unsigned int uid;          // UID do usuário que inseriu 
+    unsigned int tamanho;      // Tamanho original do arquivo
+    unsigned int emDisco;      // Tamanho em disco (comprimido ou não)
+    time_t modificacao;        // Data de modificação
+    int ordem;                 // Ordem de inserção no .vc
+    long offset;               // Offset a partir do início do .vc
 } ArquivoMembro;
 
-//Insere um arquivo no .vc (com ou sem compressão).
+// Insere um arquivo no .vc (com ou sem compressão)
+int inserirArquivo(const char* nomeArquivo, FILE* vc, long* offsetAtual,
+                   ArquivoMembro* out, int compressao, int ordem);
 
-// nomeArquivo  Caminho do arquivo no disco.
-// vc           Ponteiro para o arquivo .vc.
-// offsetAtual  Offset onde o novo arquivo será inserido.
-// out          Struct preenchida com os metadados do membro.
-// compressao   1 para compactar, 0 para armazenar puro.
-
-// 0 se sucesso, <0 se erro.
-
-int inserirArquivo(const char* nomeArquivo, FILE* vc, long* offsetAtual, ArquivoMembro* out, int compressao);
-
-// Extrai um arquivo do .vc e salva no disco.
-
-// vc             Ponteiro para o .vc.
-// membro         Metadados do arquivo a ser extraído.
-// pastaDestino   Caminho onde o arquivo extraído será salvo.
-
-// 0 se sucesso, <0 se erro.
-
+// Extrai um arquivo do .vc
 int extrairArquivo(FILE* vc, ArquivoMembro membro, const char* pastaDestino);
 
-// Remove logicamente um arquivo do índice em RAM.
-// (não remove os dados do .vc, só do índice!)
-
-// lista   Vetor de ArquivoMembro.
-// qtd     Ponteiro para a quantidade atual.
-// nome    Nome do arquivo a ser removido.
-
-// 1 se removido, 0 se não encontrado.
-
+// Remove logicamente do índice
 int removerArquivo(ArquivoMembro* lista, int* qtd, const char* nome);
 
-#endif 
+#endif
