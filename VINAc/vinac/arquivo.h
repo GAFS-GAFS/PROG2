@@ -2,6 +2,7 @@
 #define ARQUIVO_H
 
 #include <stddef.h>  
+#include <stdint.h>
 #include <stdio.h>   
 #include <stdlib.h>  
 #include <string.h> 
@@ -30,5 +31,15 @@ int extrairArquivo(FILE* vc, ArquivoMembro membro, const char* pastaDestino);
 
 // Remove logicamente do índice
 int removerArquivo(ArquivoMembro* lista, int* qtd, const char* nome);
+
+// Funções de manipulação binária
+int moverDados(FILE* vc, long offsetInicio, long offsetFim, size_t tamanho);
+int copiarDados(FILE* origem, FILE* destino, size_t tamanho);
+int reorganizarArquivo(FILE* vc, ArquivoMembro* membros, int quantidade);
+long encontrarEspacoLivre(FILE* vc, size_t tamanhoNecessario);
+
+// Funções auxiliares para manipulação do arquivo .vc
+int atualizarOffsets(ArquivoMembro* membros, int quantidade, long offsetBase, long diferenca);
+int verificarEspacoDisponivel(FILE* vc, size_t tamanhoNecessario);
 
 #endif
