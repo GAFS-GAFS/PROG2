@@ -2,19 +2,23 @@
 #include <string.h>
 #include "vinac.h"
 
+// Enumeração que define os possíveis comandos do programa
 typedef enum {
-    CMD_INVALIDO,
-    CMD_INSERT,
-    CMD_INSERT_COMP,
-    CMD_REMOVE,
-    CMD_LIST,
-    CMD_EXTRACT,
-    CMD_MOVE
+    CMD_INVALIDO,         // Comando inválido ou não reconhecido
+    CMD_INSERT,           // Inserir arquivo sem compressão (-ip)
+    CMD_INSERT_COMP,      // Inserir arquivo com compressão (-ic)
+    CMD_REMOVE,           // Remover arquivo (-r)
+    CMD_LIST,            // Listar conteúdo do arquivo (-c)
+    CMD_EXTRACT,         // Extrair arquivo (-x)
+    CMD_MOVE             // Mover arquivo dentro do índice (-m)
 } Comando;
 
+// Identifica qual comando foi passado na linha de comando
+// cmd: string contendo o comando (primeiro argumento)
+// Retorna: o comando correspondente da enumeração Comando
 Comando identificar_comando(const char *cmd) {
-    if (strcmp(cmd, "-ip") == 0) return CMD_INSERT;
-    if (strcmp(cmd, "-ic") == 0) return CMD_INSERT_COMP;
+    if (strcmp(cmd, "-ip") == 0 || strcmp(cmd, "-p") == 0) return CMD_INSERT;
+    if (strcmp(cmd, "-ic") == 0 || strcmp(cmd, "-i") == 0) return CMD_INSERT_COMP;
     if (strcmp(cmd, "-r") == 0) return CMD_REMOVE;
     if (strcmp(cmd, "-c") == 0) return CMD_LIST;
     if (strcmp(cmd, "-x") == 0) return CMD_EXTRACT;
@@ -22,20 +26,25 @@ Comando identificar_comando(const char *cmd) {
     return CMD_INVALIDO;
 }
 
+// Função principal do programa
+// Analisa os argumentos da linha de comando e executa a operação correspondente
 int main(int argc, char *argv[]) {
+    // Verifica se há argumentos suficientes
     if (argc < 2) {
         printf("Uso: vinac <comando> [opções]\n");
         return (1);
     }
 
+    // Identifica o comando passado
     Comando cmd = identificar_comando(argv[1]);
 
+    // Executa a operação correspondente ao comando
     switch (cmd) {
         case CMD_INSERT:
-            vinac_insert(argc, argv, 0);
+            vinac_insert(argc, argv, (uint32_t)0);
             break;
         case CMD_INSERT_COMP:
-            vinac_insert(argc, argv, 1);
+            vinac_insert(argc, argv, (uint32_t)1);
             break;
         case CMD_REMOVE:
             vinac_remove(argc, argv);

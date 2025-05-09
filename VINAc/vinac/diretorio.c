@@ -1,117 +1,195 @@
 #include "diretorio.h"
 
-
-void inicializarIndice(IndiceArquivador* idx) {
-    idx->membros = NULL;
-    idx->quantidade = 0;
-    idx->capacidade = 0;
+// Inicializa um novo índice vazio
+void inicializarIndice(IndiceArquivador *idx)
+{
+    inicializarLista(&idx->lista);
 }
 
-void destruirIndice(IndiceArquivador* idx) {
-    free(idx->membros);
-    idx->membros = NULL;
-    idx->quantidade = 0;
-    idx->capacidade = 0;
+// Libera toda a memória alocada pelo índice
+void destruirIndice(IndiceArquivador *idx)
+{
+    destruirLista(&idx->lista);
 }
 
-void adicionarAoIndice(IndiceArquivador* idx, ArquivoMembro membro) {
-    // Verifica se arquivo já existe
-    for (int i = 0; i < idx->quantidade; i++) {
-        if (strcmp(idx->membros[i].nome, membro.nome) == 0) {
-            // Mantém a ordem original se já existe
-            membro.ordem = idx->membros[i].ordem;
-            idx->membros[i] = membro;
-            return;
-        }
+// Adiciona um novo arquivo ao índice ou atualiza se já existir
+// Mantém a ordem original se o arquivo já existe
+void adicionarAoIndice(IndiceArquivador *idx, ArquivoMembro membro)
+{
+    if (!idx)
+        return;
+
+    // Procura se o arquivo já existe para manter o UID
+    No *existente = buscarArquivo(&idx->lista, membro.nome);
+    if (existente)
+    {
+        // Mantém a ordem original e atualiza metadados
+        membro.ordem = existente->arquivo.ordem;
+        removerArquivoLista(&idx->lista, membro.nome);
     }
 
-    // Novo arquivo - verifica se precisa aumentar o array
-    if (idx->quantidade >= idx->capacidade) {
-        int novaCapacidade = (idx->capacidade == 0) ? 1 : idx->capacidade * 2;
-        ArquivoMembro* novoArray = realloc(idx->membros, novaCapacidade * sizeof(ArquivoMembro));
-        if (!novoArray) return;
-        idx->membros = novoArray;
-        idx->capacidade = novaCapacidade;
-    }
-    
-    idx->membros[idx->quantidade++] = membro;
+    inserirArquivoLista(&idx->lista, membro);
 }
 
-int carregarIndice(FILE* vc, IndiceArquivador* idx) {
+// Carrega os metadados do arquivo .vc para a RAM
+// Lê a quantidade de membros e seus metadados do início do arquivo
+int carregarIndice(FILE *vc, IndiceArquivador *idx)
+{
+    if (!vc || !idx)
+        return -1;
+
     rewind(vc);
-    
+
     // Lê quantidade de membros
     uint32_t numMembros;
-    if (fread(&numMembros, sizeof(uint32_t), 1, vc) != 1) {
-        return -1;
+    if (fread(&numMembros, sizeof(uint32_t), 1, vc) != 1)
+    {
+        inicializarLista(&idx->lista);
+        return 0;
     }
-    
-    // Aloca espaço
-    idx->membros = malloc(numMembros * sizeof(ArquivoMembro));
-    if (!idx->membros) return -1;
-    
-    // Lê cada membro do diretório
-    for (uint32_t i = 0; i < numMembros; i++) {
-        ArquivoMembro* membro = &idx->membros[i];
-        if (fread(membro, sizeof(ArquivoMembro), 1, vc) != 1) {
-            free(idx->membros);
+
+    // Limpa lista atual se existir
+    destruirLista(&idx->lista);
+    inicializarLista(&idx->lista);
+
+    // Lê cada membro e adiciona à lista
+    for (uint32_t i = 0; i < numMembros; i++)
+    {
+        ArquivoMembro membro;
+        if (fread(&membro, sizeof(ArquivoMembro), 1, vc) != 1)
+        {
+            destruirLista(&idx->lista);
             return -1;
         }
+        inserirArquivoLista(&idx->lista, membro);
     }
-    
-    idx->quantidade = numMembros;
-    idx->capacidade = numMembros;
+
     return 0;
 }
 
-int salvarIndice(FILE* vc, IndiceArquivador* idx) {
-    // Calcula tamanho total dos dados dos membros
-    long posicaoAtual = ftell(vc);
-    
-    // Move para o início do arquivo
-    fseek(vc, 0, SEEK_SET);
-    
-    // Escreve cabeçalho com quantidade de membros
-    uint32_t numMembros = idx->quantidade;
-    if (fwrite(&numMembros, sizeof(uint32_t), 1, vc) != 1) {
+// Salva o índice atual da RAM de volta no arquivo .vc
+// Escreve primeiro a quantidade de membros, seguida pelos metadados
+int salvarIndice(FILE *vc, IndiceArquivador *idx)
+{
+    if (!vc || !idx)
+        return -1;
+
+    rewind(vc);
+
+    // Escreve quantidade de membros
+    if (fwrite(&idx->lista.quantidade, sizeof(uint32_t), 1, vc) != 1)
+    {
         return -1;
     }
-    
-    // Escreve cada membro na ordem correta
-    for (int i = 0; i < idx->quantidade; i++) {
-        ArquivoMembro* atual = NULL;
-        // Encontra membro com ordem i
-        for (int j = 0; j < idx->quantidade; j++) {
-            if (idx->membros[j].ordem == i) {
-                atual = &idx->membros[j];
-                break;
-            }
-        }
-        if (!atual || fwrite(atual, sizeof(ArquivoMembro), 1, vc) != 1) {
+
+    // Escreve cada membro da lista sequencialmente
+    No *atual = idx->lista.primeiro;
+    while (atual != NULL)
+    {
+        if (fwrite(&atual->arquivo, sizeof(ArquivoMembro), 1, vc) != 1)
+        {
             return -1;
         }
+        atual = atual->proximo;
     }
-    
-    // Retorna à posição original
-    fseek(vc, posicaoAtual, SEEK_SET);
+
+    fflush(vc);
     return 0;
 }
 
-void listarArquivos(const IndiceArquivador* idx) {
+// Lista todos os arquivos presentes no índice com seus metadados
+// Mostra: ordem, nome, UID, tamanho original, tamanho em disco e data
+void listarArquivos(const IndiceArquivador *idx)
+{
+    if (!idx || !idx->lista.primeiro)
+    {
+        printf("Nenhum arquivo no índice.\n");
+        return;
+    }
+
     printf("Conteúdo do arquivo:\n");
     printf("Ordem  Nome                Uid      Tam.Orig  Tam.Disco  Data Mod.\n");
     printf("-----  ------------------- -------- --------- ---------- ----------\n");
-    
-    for (int i = 0; i < idx->quantidade; i++) {
-        ArquivoMembro* m = &idx->membros[i];
-        char data[20];
-        strftime(data, 20, "%Y-%m-%d", localtime(&m->modificacao));
-        printf("%-5d  %-19s %-8u %-9u %-10u %s\n",
+
+    No *atual = idx->lista.primeiro;
+    while (atual != NULL)
+    {
+        ArquivoMembro *m = &atual->arquivo;
+
+        // Validação básica dos dados antes de imprimir
+        if (!m->nome[0] || m->tamanho == 0)
+        {
+            atual = atual->proximo;
+            continue;
+        }
+
+        // Formata a data para exibição
+        char data[20] = "N/A";
+        if (m->modificacao > 0)
+        {
+            struct tm *timeinfo = localtime(&m->modificacao);
+            if (timeinfo)
+            {
+                strftime(data, sizeof(data), "%Y-%m-%d", timeinfo);
+            }
+        }
+
+        // Imprime os dados do arquivo formatados
+        printf("%-5u  %-19s %-8u %-9u %-10u %s\n",
                m->ordem,
                m->nome,
                m->uid,
                m->tamanho,
                m->emDisco,
                data);
+
+        atual = atual->proximo;
     }
+
+    printf("\nTotal de arquivos: %u\n", idx->lista.quantidade);
+}
+
+void mostrarLayoutMemoria(const IndiceArquivador *idx, uint64_t tamanhoHeader)
+{
+    if (!idx || !idx->lista.primeiro)
+    {
+        printf("Nenhum arquivo no índice.\n");
+        return;
+    }
+
+    printf("\nLayout de Memória do Arquivo .vc:\n");
+    printf("----------------------------------------\n");
+    printf("Endereço     | Tamanho | Arquivo\n");
+    printf("-------------|----------|------------------\n");
+
+    // Mostra o cabeçalho primeiro
+    printf("0x%09lx | %-8lu | [HEADER]\n", 0UL, tamanhoHeader);
+
+    No *atual = idx->lista.primeiro;
+    uint64_t finalAnterior = tamanhoHeader;
+
+    while (atual != NULL)
+    {
+        ArquivoMembro *m = &atual->arquivo;
+
+        // Mostra gaps se existirem
+        if (m->offset > finalAnterior)
+        {
+            printf("0x%09lx | %-8lu | [GAP]\n",
+                   finalAnterior,
+                   m->offset - finalAnterior);
+        }
+
+        // Mostra o arquivo atual
+        printf("0x%09lx | %-8u | %s\n",
+               m->offset,
+               m->emDisco,
+               m->nome);
+
+        finalAnterior = m->offset + m->emDisco;
+        atual = atual->proximo;
+    }
+
+    printf("----------------------------------------\n");
+    printf("Tamanho total ocupado: %lu bytes\n", finalAnterior);
 }

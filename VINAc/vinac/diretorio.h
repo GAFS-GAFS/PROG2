@@ -1,45 +1,47 @@
 #ifndef DIRETORIO_H
 #define DIRETORIO_H
 
-#include "arquivo.h"  
+#include "arquivo.h"
 
-// Estrutura que representa o índice dos arquivos presentes no arquivador (.vc)
-typedef struct {
-    ArquivoMembro* membros; // Vetor dinâmico com os metadados dos arquivos (nome, tamanho, offset etc.)
-    int quantidade;         // Quantidade atual de arquivos armazenados no índice
-    int capacidade;         // Capacidade alocada do vetor (para evitar realocação frequente)
+// Estrutura que representa o índice completo do arquivador (.vc)
+// Contém a lista de todos os arquivos armazenados e seus metadados
+typedef struct
+{
+    Lista lista; // Lista duplamente encadeada com os metadados dos arquivos
 } IndiceArquivador;
 
+// Inicializa um novo índice vazio
+// idx: ponteiro para o índice a ser inicializado
+void inicializarIndice(IndiceArquivador *idx);
 
-// Inicializa o índice, alocando memória para o vetor de membros.
+// Libera toda a memória alocada pelo índice, incluindo a lista de arquivos
+// idx: ponteiro para o índice a ser destruído
+void destruirIndice(IndiceArquivador *idx);
 
-void inicializarIndice(IndiceArquivador* idx);
+// Adiciona um novo arquivo ao índice ou atualiza se já existir
+// idx: ponteiro para o índice
+// membro: estrutura contendo os metadados do arquivo a ser adicionado
+void adicionarAoIndice(IndiceArquivador *idx, ArquivoMembro membro);
 
+// Carrega os metadados do arquivo .vc para a memória
+// vc: arquivo .vc aberto para leitura
+// idx: ponteiro para o índice onde os dados serão carregados
+// Retorna 0 em caso de sucesso, ou -1 em caso de erro
+int carregarIndice(FILE *vc, IndiceArquivador *idx);
 
-// Libera toda a memória alocada pelo índice.
+// Salva o índice atual da memória de volta no arquivo .vc
+// vc: arquivo .vc aberto para escrita
+// idx: ponteiro para o índice a ser salvo
+// Retorna 0 em caso de sucesso, ou -1 em caso de erro
+int salvarIndice(FILE *vc, IndiceArquivador *idx);
 
-void destruirIndice(IndiceArquivador* idx);
+// Lista todos os arquivos presentes no índice com seus metadados
+// idx: ponteiro para o índice a ser listado
+void listarArquivos(const IndiceArquivador *idx);
 
-
-// Adiciona um novo membro ao índice (ou substitui se já existir).
-
-void adicionarAoIndice(IndiceArquivador* idx, ArquivoMembro membro);
-
-
-// Carrega os metadados (índice) do arquivo .vc para a RAM.
-// Retorna 0 em caso de sucesso, ou -1 em caso de erro.
-
-int carregarIndice(FILE* vc, IndiceArquivador* idx);
-
-
-// Salva o índice atual da RAM de volta no arquivo .vc.
-// Retorna 0 em caso de sucesso, ou -1 em caso de erro.
-
-int salvarIndice(FILE* vc, IndiceArquivador* idx);
-
-
-// Lista os arquivos presentes no índice, mostrando os metadados de cada um.
-
-void listarArquivos(const IndiceArquivador* idx);
+// Mostra o layout de memória dos arquivos no arquivador
+// idx: ponteiro para o índice
+// tamanhoHeader: tamanho do cabeçalho (metadata) do arquivo .vc
+void mostrarLayoutMemoria(const IndiceArquivador *idx, uint64_t tamanhoHeader);
 
 #endif
