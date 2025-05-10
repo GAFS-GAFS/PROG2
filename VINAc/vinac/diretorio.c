@@ -4,6 +4,7 @@
 void inicializarIndice(IndiceArquivador *idx)
 {
     inicializarLista(&idx->lista);
+    idx->ultimoUID = 0;
 }
 
 // Libera toda a memória alocada pelo índice
@@ -45,12 +46,14 @@ int carregarIndice(FILE *vc, IndiceArquivador *idx)
     if (fread(&numMembros, sizeof(uint32_t), 1, vc) != 1)
     {
         inicializarLista(&idx->lista);
+        idx->ultimoUID = 0;
         return 0;
     }
 
     // Limpa lista atual se existir
     destruirLista(&idx->lista);
     inicializarLista(&idx->lista);
+    idx->ultimoUID = 0;
 
     // Lê cada membro e adiciona à lista
     for (uint32_t i = 0; i < numMembros; i++)
@@ -59,9 +62,11 @@ int carregarIndice(FILE *vc, IndiceArquivador *idx)
         if (fread(&membro, sizeof(ArquivoMembro), 1, vc) != 1)
         {
             destruirLista(&idx->lista);
+            idx->ultimoUID = 0;
             return -1;
         }
         inserirArquivoLista(&idx->lista, membro);
+        if (membro.uid > idx->ultimoUID) idx->ultimoUID = membro.uid;
     }
 
     return 0;
@@ -69,25 +74,21 @@ int carregarIndice(FILE *vc, IndiceArquivador *idx)
 
 // Salva o índice atual da RAM de volta no arquivo .vc
 // Escreve primeiro a quantidade de membros, seguida pelos metadados
-int salvarIndice(FILE *vc, IndiceArquivador *idx)
-{
-    if (!vc || !idx)
-        return -1;
+int salvarIndice(FILE *vc, IndiceArquivador *idx) {
+    if (!vc || !idx) return -1;
 
     rewind(vc);
 
     // Escreve quantidade de membros
-    if (fwrite(&idx->lista.quantidade, sizeof(uint32_t), 1, vc) != 1)
-    {
+    if (fwrite(&idx->lista.quantidade, sizeof(uint32_t), 1, vc) != 1) {
         return -1;
     }
 
     // Escreve cada membro da lista sequencialmente
     No *atual = idx->lista.primeiro;
-    while (atual != NULL)
-    {
-        if (fwrite(&atual->arquivo, sizeof(ArquivoMembro), 1, vc) != 1)
-        {
+    for (uint32_t i = 0; i < idx->lista.quantidade; i++) {
+        if (!atual) break; // Segurança extra
+        if (fwrite(&atual->arquivo, sizeof(ArquivoMembro), 1, vc) != 1) {
             return -1;
         }
         atual = atual->proximo;

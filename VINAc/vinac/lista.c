@@ -54,35 +54,35 @@ int inserirArquivoLista(Lista* lista, ArquivoMembro arquivo) {
 // Retorna 1 se removeu, 0 se não encontrou
 int removerArquivoLista(Lista* lista, const char* nome) {
     No* atual = lista->primeiro;
-    
+
     while (atual != NULL) {
         if (strcmp(atual->arquivo.nome, nome) == 0) {
-            // Se é o primeiro nó
+            // Ajusta os ponteiros
             if (atual->anterior == NULL) {
                 lista->primeiro = atual->proximo;
-                if (lista->primeiro)
+                if (lista->primeiro) {
                     lista->primeiro->anterior = NULL;
+                }
             } else {
                 atual->anterior->proximo = atual->proximo;
             }
 
-            // Se é o último nó
             if (atual->proximo == NULL) {
                 lista->ultimo = atual->anterior;
-                if (lista->ultimo)
+                if (lista->ultimo) {
                     lista->ultimo->proximo = NULL;
+                }
             } else {
                 atual->proximo->anterior = atual->anterior;
             }
 
             free(atual);
             lista->quantidade--;
-            atualizarOrdens(lista);
-            return 1;
+            return 1; // Sucesso
         }
         atual = atual->proximo;
     }
-    return 0;
+    return 0; // Arquivo não encontrado
 }
 
 // Busca um arquivo na lista pelo nome

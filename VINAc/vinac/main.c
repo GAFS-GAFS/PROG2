@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
             vinac_insert(argc, argv, (uint32_t)0);
             break;
         case CMD_INSERT_COMP:
-            vinac_insert(argc, argv, (uint32_t)1);
+            vinac_insert_comp(argc, argv);
             break;
         case CMD_REMOVE:
             vinac_remove(argc, argv);

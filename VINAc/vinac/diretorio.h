@@ -3,13 +3,6 @@
 
 #include "arquivo.h"
 
-// Estrutura que representa o índice completo do arquivador (.vc)
-// Contém a lista de todos os arquivos armazenados e seus metadados
-typedef struct
-{
-    Lista lista; // Lista duplamente encadeada com os metadados dos arquivos
-} IndiceArquivador;
-
 // Inicializa um novo índice vazio
 // idx: ponteiro para o índice a ser inicializado
 void inicializarIndice(IndiceArquivador *idx);

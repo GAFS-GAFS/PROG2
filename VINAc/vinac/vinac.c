@@ -60,8 +60,10 @@ void vinac_insert(int argc, char *argv[], uint32_t compress)
     // Realoca dados dos arquivos antigos se necessário
     uint64_t offsetDados = novoHeader;
     No *atual = indice.lista.primeiro;
-    while (atual) {
-        if (atual->arquivo.offset != offsetDados) {
+    while (atual)
+    {
+        if (atual->arquivo.offset != offsetDados)
+        {
             moverDados(vc, atual->arquivo.offset, offsetDados, atual->arquivo.emDisco);
             atual->arquivo.offset = offsetDados;
         }
@@ -72,10 +74,12 @@ void vinac_insert(int argc, char *argv[], uint32_t compress)
     // Processa cada arquivo novo
     for (int i = 3; i < argc; i++)
     {
+        // Inserção plana
         ArquivoMembro novoMembro;
         strncpy(novoMembro.nome, argv[i], sizeof(novoMembro.nome) - 1);
         novoMembro.nome[sizeof(novoMembro.nome) - 1] = '\0';
-        novoMembro.uid = indice.lista.quantidade + 1;
+        novoMembro.uid = indice.ultimoUID + 1;
+        indice.ultimoUID = novoMembro.uid;
         novoMembro.modificacao = time(NULL);
         novoMembro.ordem = indice.lista.quantidade;
         novoMembro.offset = offsetDados;
@@ -104,6 +108,160 @@ void vinac_insert(int argc, char *argv[], uint32_t compress)
     fclose(vc);
 }
 
+int vinac_insert_comp(int argc, char *argv[])
+{
+    if (argc < 4)
+    {
+        fprintf(stderr, "Uso: vinac -ic arquivo.vc arquivo1 [arquivo2 ...]\n");
+        return -1;
+    }
+
+    const char *arquivoVC = argv[2];
+    FILE *vc = NULL;
+    IndiceArquivador indice;
+    inicializarIndice(&indice);
+
+    // Verifica se o arquivo .vc já existe
+    if (access(arquivoVC, F_OK) == 0)
+    {
+        vc = fopen(arquivoVC, "r+b");
+        if (!vc)
+        {
+            fprintf(stderr, "Erro ao abrir o arquivo %s\n", arquivoVC);
+            destruirIndice(&indice);
+            return -1;
+        }
+        if (carregarIndice(vc, &indice) < 0)
+        {
+            fprintf(stderr, "Erro ao carregar o índice do arquivador.\n");
+            fclose(vc);
+            destruirIndice(&indice);
+            return -1;
+        }
+    }
+    else
+    {
+        vc = fopen(arquivoVC, "w+b");
+        if (!vc)
+        {
+            fprintf(stderr, "Erro ao criar o arquivo %s\n", arquivoVC);
+            destruirIndice(&indice);
+            return -1;
+        }
+        uint32_t numMembros = 0;
+        if (fwrite(&numMembros, sizeof(uint32_t), 1, vc) != 1)
+        {
+            fprintf(stderr, "Erro ao inicializar o arquivo %s\n", arquivoVC);
+            fclose(vc);
+            destruirIndice(&indice);
+            return -1;
+        }
+    }
+
+    // Descobre o maior tamanho de arquivo para o buffer
+    size_t maiorTamanho = 0;
+    No *atual = indice.lista.primeiro;
+    while (atual)
+    {
+        if (atual->arquivo.tamanho > maiorTamanho)
+            maiorTamanho = atual->arquivo.tamanho;
+        atual = atual->proximo;
+    }
+    for (int i = 3; i < argc; i++)
+    {
+        FILE *arq = fopen(argv[i], "rb");
+        if (arq)
+        {
+            fseek(arq, 0, SEEK_END);
+            size_t sz = ftell(arq);
+            if (sz > maiorTamanho)
+                maiorTamanho = sz;
+            fclose(arq);
+        }
+    }
+    if (maiorTamanho == 0)
+        maiorTamanho = 4096;
+    unsigned char *buffer = malloc(maiorTamanho);
+    if (!buffer)
+    {
+        fprintf(stderr, "Erro de memória para buffer.\n");
+        destruirIndice(&indice);
+        fclose(vc);
+        return -1;
+    }
+
+    for (int i = 3; i < argc; i++)
+    {
+        No *existente = buscarArquivo(&indice.lista, argv[i]);
+        int diffTamanho = 0;
+        int novoEmDisco = 0;
+        uint32_t tamOriginal = 0;
+        uint64_t offset = 0;
+        if (existente)
+        {
+            offset = existente->arquivo.offset;
+            novoEmDisco = substituirOuInserirArquivo(argv[i], vc, offset, existente->arquivo.emDisco, 1, buffer, maiorTamanho, &diffTamanho, &tamOriginal);
+            if (novoEmDisco < 0)
+            {
+                fprintf(stderr, "Erro ao inserir/substituir o arquivo %s\n", argv[i]);
+                continue;
+            }
+            if (diffTamanho != 0)
+            {
+                existente->arquivo.emDisco = novoEmDisco;
+                existente->arquivo.tamanho = tamOriginal;
+                existente->arquivo.modificacao = time(NULL);
+                No *seg = existente->proximo;
+                while (seg)
+                {
+                    seg->arquivo.offset += diffTamanho;
+                    seg = seg->proximo;
+                }
+                printf("Arquivo '%s' comprimido e atualizado no .vc.\n", argv[i]);
+            }
+            else
+            {
+                printf("Arquivo '%s' já está otimizado (compressão não reduz tamanho).\n", argv[i]);
+            }
+        }
+        else
+        {
+            No *ult = indice.lista.ultimo;
+            if (ult)
+                offset = ult->arquivo.offset + ult->arquivo.emDisco;
+            else
+                offset = sizeof(uint32_t) + (indice.lista.quantidade) * sizeof(ArquivoMembro);
+            novoEmDisco = substituirOuInserirArquivo(argv[i], vc, offset, 0, 1, buffer, maiorTamanho, &diffTamanho, &tamOriginal);
+            if (novoEmDisco < 0)
+            {
+                fprintf(stderr, "Erro ao inserir arquivo novo %s\n", argv[i]);
+                continue;
+            }
+            ArquivoMembro novoMembro;
+            strncpy(novoMembro.nome, argv[i], sizeof(novoMembro.nome) - 1);
+            novoMembro.nome[sizeof(novoMembro.nome) - 1] = '\0';
+            novoMembro.uid = indice.ultimoUID + 1;
+            indice.ultimoUID = novoMembro.uid;
+            novoMembro.tamanho = tamOriginal;
+            novoMembro.emDisco = (uint32_t)novoEmDisco;
+            novoMembro.modificacao = time(NULL);
+            novoMembro.ordem = indice.lista.quantidade;
+            novoMembro.offset = offset;
+            adicionarAoIndice(&indice, novoMembro);
+            printf("Arquivo '%s' inserido comprimido no .vc.\n", argv[i]);
+        }
+    }
+
+    free(buffer);
+    rewind(vc);
+    if (salvarIndice(vc, &indice) < 0)
+    {
+        fprintf(stderr, "Erro ao salvar o índice no arquivador.\n");
+    }
+    destruirIndice(&indice);
+    fclose(vc);
+    return 0;
+}
 
 // Remove um arquivo do arquivador .vc
 // Os arquivos restantes são movidos para preencher o espaço
@@ -134,16 +292,10 @@ void vinac_remove(int argc, char *argv[])
         return;
     }
 
+    // RemoverArquivo manipula dados binários, offsets e remove o nó da lista e do header
     if (removerArquivo(vc, &indice.lista, argv[3]))
     {
         printf("Arquivo '%s' removido com sucesso.\n", argv[3]);
-
-        // Atualiza o índice após a remoção
-        rewind(vc);
-        if (salvarIndice(vc, &indice) < 0)
-        {
-            fprintf(stderr, "Erro ao salvar o índice no arquivador.\n");
-        }
     }
     else
     {
