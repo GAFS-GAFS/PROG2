@@ -6,7 +6,7 @@ LDFLAGS=                 # Flags de linkedição (vazio por enquanto)
 # Arquivos fonte do projeto
 SOURCES=main.c vinac.c diretorio.c arquivo.c lz.c lista.c
 OBJECTS=$(SOURCES:.c=.o) # Gera lista de objetos a partir dos fontes
-TARGET=vina              # Nome do executável final
+TARGET=vinac            # Nome do executável final
 
 # Regra principal - compila todo o projeto
 all: $(TARGET)

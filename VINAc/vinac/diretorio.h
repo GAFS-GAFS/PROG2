@@ -32,9 +32,10 @@ int salvarIndice(FILE *vc, IndiceArquivador *idx);
 // idx: ponteiro para o índice a ser listado
 void listarArquivos(const IndiceArquivador *idx);
 
-// Mostra o layout de memória dos arquivos no arquivador
-// idx: ponteiro para o índice
-// tamanhoHeader: tamanho do cabeçalho (metadata) do arquivo .vc
-void mostrarLayoutMemoria(const IndiceArquivador *idx, uint64_t tamanhoHeader);
+// Move um nó dentro da lista de arquivos
+// lista: ponteiro para a lista de arquivos
+// atualPos: posição atual do nó
+// novaPos: nova posição desejada do nó
+int moverNoLista(Lista *lista, uint32_t atualPos, uint32_t novaPos);
 
 #endif

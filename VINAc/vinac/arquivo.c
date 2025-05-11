@@ -6,6 +6,7 @@ size_t encontrarMaiorArquivo(Lista *lista, size_t tamanhoAtual)
     size_t maiorTamanho = tamanhoAtual;
 
     No *atual = lista->primeiro;
+
     while (atual != NULL)
     {
         if (atual->arquivo.tamanho > maiorTamanho)
@@ -15,68 +16,48 @@ size_t encontrarMaiorArquivo(Lista *lista, size_t tamanhoAtual)
         atual = atual->proximo;
     }
 
-    return maiorTamanho;
+    return (maiorTamanho);
 }
 
-// Move um bloco de dados dentro do arquivo
-int moverDados(FILE *vc, uint64_t offsetInicio, uint64_t offsetFim, size_t tamanho)
+int moverDados(FILE *vc, uint64_t offsetInicio, uint64_t offsetFim, size_t tamanho, size_t tamanhoBuffer)
 {
-    // Encontra tamanho do maior arquivo para alocar buffer
-    rewind(vc);
-    uint32_t numMembros;
-    fread(&numMembros, sizeof(uint32_t), 1, vc);
+    if (tamanhoBuffer == 0)
+        tamanhoBuffer = 4096;
+    if (tamanho < tamanhoBuffer)
+        tamanhoBuffer = tamanho;
 
-    // Aloca buffer para ler os metadados
-    Lista lista;
-    inicializarLista(&lista);
-
-    // Lê os metadados dos arquivos
-    for (uint32_t i = 0; i < numMembros; i++)
-    {
-        ArquivoMembro membro;
-        fread(&membro, sizeof(ArquivoMembro), 1, vc);
-        inserirArquivoLista(&lista, membro);
-    }
-
-    size_t tamanhoBuffer = encontrarMaiorArquivo(&lista, tamanho);
     unsigned char *buffer = malloc(tamanhoBuffer);
-
     if (!buffer)
-    {
-        destruirLista(&lista);
         return -1;
-    }
 
-    // Se movendo para frente, começa do fim
+    // Se o destino está à frente da origem, copia de trás para frente
     if (offsetFim > offsetInicio)
     {
         size_t bytesRestantes = tamanho;
         while (bytesRestantes > 0)
         {
             size_t bytesLer = (bytesRestantes < tamanhoBuffer) ? bytesRestantes : tamanhoBuffer;
+            uint64_t posOrigem = offsetInicio + bytesRestantes - bytesLer;
+            uint64_t posDestino = offsetFim + bytesRestantes - bytesLer;
 
-            fseek(vc, offsetInicio + bytesRestantes - bytesLer, SEEK_SET);
+            fseek(vc, posOrigem, SEEK_SET);
             if (fread(buffer, 1, bytesLer, vc) != bytesLer)
             {
                 free(buffer);
-                destruirLista(&lista);
                 return -1;
             }
-
-            fseek(vc, offsetFim + bytesRestantes - bytesLer, SEEK_SET);
+            fseek(vc, posDestino, SEEK_SET);
             if (fwrite(buffer, 1, bytesLer, vc) != bytesLer)
             {
                 free(buffer);
-                destruirLista(&lista);
                 return -1;
             }
-
             bytesRestantes -= bytesLer;
         }
     }
     else
     {
-        // Se movendo para trás, começa do início
+        // Se o destino está atrás da origem, copia de frente para trás
         size_t bytesRestantes = tamanho;
         while (bytesRestantes > 0)
         {
@@ -86,18 +67,14 @@ int moverDados(FILE *vc, uint64_t offsetInicio, uint64_t offsetFim, size_t taman
             if (fread(buffer, 1, bytesLer, vc) != bytesLer)
             {
                 free(buffer);
-                destruirLista(&lista);
                 return -1;
             }
-
             fseek(vc, offsetFim, SEEK_SET);
             if (fwrite(buffer, 1, bytesLer, vc) != bytesLer)
             {
                 free(buffer);
-                destruirLista(&lista);
                 return -1;
             }
-
             offsetInicio += bytesLer;
             offsetFim += bytesLer;
             bytesRestantes -= bytesLer;
@@ -105,7 +82,6 @@ int moverDados(FILE *vc, uint64_t offsetInicio, uint64_t offsetFim, size_t taman
     }
 
     free(buffer);
-    destruirLista(&lista);
     return 0;
 }
 
@@ -236,18 +212,34 @@ int substituirOuInserirArquivo(const char *nomeArquivo, FILE *vc, uint64_t offse
         size_t bytesMover = fimArquivo > offsetOrigem ? fimArquivo - offsetOrigem : 0;
         if (bytesMover > 0)
         {
-            size_t rest = bytesMover;
-            while (rest > 0)
+            size_t rest = 0;
+            while (rest < bytesMover)
             {
-                size_t ler = rest < bufferSize ? rest : bufferSize;
-                fseek(vc, offsetOrigem + rest - ler, SEEK_SET);
-                fread(buffer, 1, ler, vc);
-                fseek(vc, offsetDestino + rest - ler, SEEK_SET);
-                fwrite(buffer, 1, ler, vc);
-                rest -= ler;
+                size_t ler = (bytesMover - rest) < bufferSize ? (bytesMover - rest) : bufferSize;
+                fseek(vc, offsetOrigem + rest, SEEK_SET);
+                if (fread(buffer, 1, ler, vc) != ler)
+                {
+                    if (bufferComprimido)
+                        free(bufferComprimido);
+                    return -1;
+                }
+                fseek(vc, offsetDestino + rest, SEEK_SET);
+                if (fwrite(buffer, 1, ler, vc) != ler)
+                {
+                    if (bufferComprimido)
+                        free(bufferComprimido);
+                    return -1;
+                }
+                rest += ler;
             }
         }
-        ftruncate(fileno(vc), offsetDestino + bytesMover);
+        // Trunca o arquivo
+        if (ftruncate(fileno(vc), offsetDestino + bytesMover) != 0)
+        {
+            if (bufferComprimido)
+                free(bufferComprimido);
+            return -1;
+        }
     }
     else if (emDiscoAntigo > 0 && tamanhoFinal > emDiscoAntigo)
     {
@@ -263,15 +255,31 @@ int substituirOuInserirArquivo(const char *nomeArquivo, FILE *vc, uint64_t offse
             {
                 size_t ler = rest < bufferSize ? rest : bufferSize;
                 fseek(vc, offsetOrigem + rest - ler, SEEK_SET);
-                fread(buffer, 1, ler, vc);
+                if (fread(buffer, 1, ler, vc) != ler)
+                {
+                    if (bufferComprimido)
+                        free(bufferComprimido);
+                    return -1;
+                }
                 fseek(vc, offsetDestino + rest - ler, SEEK_SET);
-                fwrite(buffer, 1, ler, vc);
+                if (fwrite(buffer, 1, ler, vc) != ler)
+                {
+                    if (bufferComprimido)
+                        free(bufferComprimido);
+                    return -1;
+                }
                 rest -= ler;
             }
         }
     }
+    // Escreve os dados finais no offset correto
     fseek(vc, offset, SEEK_SET);
-    fwrite(dadosFinais, 1, tamanhoFinal, vc);
+    if (fwrite(dadosFinais, 1, tamanhoFinal, vc) != tamanhoFinal)
+    {
+        if (bufferComprimido)
+            free(bufferComprimido);
+        return -1;
+    }
     if (bufferComprimido)
         free(bufferComprimido);
     return (int)tamanhoFinal;
@@ -286,73 +294,58 @@ int extrairArquivo(FILE *vc, ArquivoMembro membro, const char *pastaDestino)
     if (!destino)
         return -1;
 
-    // Encontra tamanho do maior arquivo para buffer
-    rewind(vc);
-    uint32_t numMembros;
-    fread(&numMembros, sizeof(uint32_t), 1, vc);
-
-    Lista lista;
-    inicializarLista(&lista);
-
-    for (uint32_t i = 0; i < numMembros; i++)
+    // Move para o offset do membro no arquivo .vc
+    if (fseek(vc, membro.offset, SEEK_SET) != 0)
     {
-        ArquivoMembro membroTemp;
-        fread(&membroTemp, sizeof(ArquivoMembro), 1, vc);
-        inserirArquivoLista(&lista, membroTemp);
-    }
-
-    size_t tamanhoBuffer = encontrarMaiorArquivo(&lista, membro.tamanho);
-    unsigned char *buffer = malloc(tamanhoBuffer);
-
-    if (!buffer)
-    {
-        destruirLista(&lista);
         fclose(destino);
         return -1;
     }
 
-    fseek(vc, membro.offset, SEEK_SET);
-
+    // Se o arquivo está comprimido, descomprime em blocos
     if (membro.emDisco != membro.tamanho)
     {
-        // Arquivo está comprimido
-        if (fread(buffer, 1, membro.emDisco, vc) != membro.emDisco)
+        // Lê o arquivo comprimido em blocos
+        unsigned char *bufferComp = malloc(membro.emDisco);
+        if (!bufferComp)
         {
-            free(buffer);
-            destruirLista(&lista);
             fclose(destino);
             return -1;
         }
-
-        // Descomprime
-        unsigned char *decompBuf = malloc(membro.tamanho);
-        if (!decompBuf)
+        if (fread(bufferComp, 1, membro.emDisco, vc) != membro.emDisco)
         {
-            free(buffer);
-            destruirLista(&lista);
+            free(bufferComp);
             fclose(destino);
             return -1;
         }
-
-        LZ_Uncompress(buffer, decompBuf, membro.emDisco);
-        fwrite(decompBuf, 1, membro.tamanho, destino);
-        free(decompBuf);
+        // Descomprime para um buffer do tamanho original
+        unsigned char *bufferDecomp = malloc(membro.tamanho);
+        if (!bufferDecomp)
+        {
+            free(bufferComp);
+            fclose(destino);
+            return -1;
+        }
+        LZ_Uncompress(bufferComp, bufferDecomp, membro.emDisco);
+        fwrite(bufferDecomp, 1, membro.tamanho, destino);
+        free(bufferComp);
+        free(bufferDecomp);
     }
     else
     {
-        // Arquivo não comprimido
-        if (fread(buffer, 1, membro.tamanho, vc) != membro.tamanho)
+        // Arquivo não comprimido, copia em blocos
+        uint32_t restante = membro.tamanho;
+        unsigned char buffer[4096];
+        while (restante > 0)
         {
-            free(buffer);
-            destruirLista(&lista);
-            fclose(destino);
-            return -1;
+            size_t ler = (restante > sizeof(buffer)) ? sizeof(buffer) : restante;
+            size_t lidos = fread(buffer, 1, ler, vc);
+            if (lidos == 0)
+                break;
+            fwrite(buffer, 1, lidos, destino);
+            restante -= lidos;
         }
-        fwrite(buffer, 1, membro.tamanho, destino);
     }
 
-    free(buffer);
-    destruirLista(&lista);
     fclose(destino);
     return 0;
 }
@@ -361,19 +354,21 @@ int removerArquivo(FILE *vc, Lista *lista, const char *nome)
 {
     No *atual = lista->primeiro;
     uint32_t posicao = 0;
+    // Calcule o maior tamanho de arquivo para usar como buffer
+    size_t tamanhoBuffer = encontrarMaiorArquivo(lista, 0);
+
     while (atual != NULL)
     {
         if (strcmp(atual->arquivo.nome, nome) == 0)
         {
             uint64_t offsetRemovido = atual->arquivo.offset;
-            uint32_t tamanhoRemovido = atual->arquivo.emDisco;
             No *mover = atual->proximo;
             uint64_t novoOffset = offsetRemovido;
 
             // Move os arquivos seguintes para frente e atualiza offsets
             while (mover)
             {
-                moverDados(vc, mover->arquivo.offset, novoOffset, mover->arquivo.emDisco);
+                moverDados(vc, mover->arquivo.offset, novoOffset, mover->arquivo.emDisco, tamanhoBuffer);
                 mover->arquivo.offset = novoOffset;
                 novoOffset += mover->arquivo.emDisco;
                 mover = mover->proximo;
