@@ -1,0 +1,25 @@
+----------------------------------------------- O ARQUIVADOR VINAC -----------------------------------------------
+
+GRR : GRR20222546 
+Nome: GABRIEL AUGUSTO FABRI SOLTOVSKI
+
+----------------------------------------------- DIRETÓRIOS E ARQUIVOS --------------------------------------------
+
+arquivo.h/.c -> Possui as funções para manipular os arquivos binários do archive.vc
+diretorio.h/.c -> Possui as funções para manipular a lista duplamente encadeada e as structs.
+lista.h/.c -> Possui as funções que fazem a lista duplamente encadeada funcionar, como os nós e a estrutura principal da lista.
+vinac.h/.c -> Possui as funções que manipulam os arquivos passados pelo terminal, e manipula seus metadados.
+
+main.c -> possui um case switch para opção de manipulações de arquivos.
+membros.h -> possui a struct que armazena os metadados dos arquivos membros.
+
+------------------------------------------------- BUGS CONHECIDOS ------------------------------------------------
+
+A função -ip não atualiza o membro alvo, somente insere os arquivos no final do archive.vc
+
+A função -r remove e move os arquvis binários, mas, quando abre o archive.vc, é possível vizualizar "Structs Fantasmas", ou seja, remove o arquivo binário, mas não a struct do diretório 100%
+
+A função -m membro modifica a ordem no diretório, na primeira execução, ele move os dados binários, porém na segunda execução, ele não realiza mais a troca de dados binários corretamente, sobreescrevendo os dados binários dos outros arquivos, somente as structs são modificados na ordem.
+
+---------------------------------------------- DESCRIÇÃO DO PROJETO ----------------------------------------------
+
