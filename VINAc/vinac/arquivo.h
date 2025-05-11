@@ -25,6 +25,10 @@ typedef struct
 int inserirArquivo(const char *nomeArquivo, FILE *vc, uint64_t *offset,
                    uint32_t *tamanhoFinal, uint32_t compressao);
 
+// Manipula apenas os dados binários dentro do archive.vc
+// Retorna o novo tamanho em disco (>0) ou -1 em erro. diffTamanho recebe a diferença de tamanho (novo - antigo), tamanhoOriginal recebe o tamanho descomprimido
+int inserirComp(const char *nomeArquivo, FILE *vc, uint64_t offset, uint32_t emDiscoAntigo, uint32_t compressao, unsigned char *buffer, size_t bufferSize, int *diffTamanho, uint32_t *tamanhoOriginal);
+
 // Extrai um arquivo do .vc
 int extrairArquivo(FILE *vc, ArquivoMembro membro, const char *pastaDestino);
 
@@ -34,10 +38,7 @@ int removerArquivo(FILE *vc, Lista *lista, const char *nome);
 // Move um bloco de dados dentro do arquivo
 int moverDados(FILE *vc, uint64_t offsetInicio, uint64_t offsetFim, size_t tamanho, size_t tamanhoBuffer);
 
+// Encontra o maior arquivo na lista de arquivos
 size_t encontrarMaiorArquivo(Lista *lista, size_t tamanhoAtual);
-
-// Manipula apenas os dados binários dentro do archive.vc
-// Retorna o novo tamanho em disco (>0) ou -1 em erro. diffTamanho recebe a diferença de tamanho (novo - antigo), tamanhoOriginal recebe o tamanho descomprimido
-int substituirOuInserirArquivo(const char *nomeArquivo, FILE *vc, uint64_t offset, uint32_t emDiscoAntigo, uint32_t compressao, unsigned char *buffer, size_t bufferSize, int *diffTamanho, uint32_t *tamanhoOriginal);
 
 #endif

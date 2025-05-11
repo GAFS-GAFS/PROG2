@@ -159,7 +159,7 @@ int inserirArquivo(const char *nomeArquivo, FILE *vc, uint64_t *offsetAtual, uin
 // compressao: 1 para comprimir, 0 para não comprimir
 // buffer: buffer de trabalho já alocado, de tamanho bufferSize (maior arquivo)
 // Retorna tamanho final escrito (>0) ou -1 em erro
-int substituirOuInserirArquivo(const char *nomeArquivo, FILE *vc, uint64_t offset, uint32_t emDiscoAntigo, uint32_t compressao, unsigned char *buffer, size_t bufferSize, int *diffTamanho, uint32_t *tamanhoOriginal)
+int inserirComp(const char *nomeArquivo, FILE *vc, uint64_t offset, uint32_t emDiscoAntigo, uint32_t compressao, unsigned char *buffer, size_t bufferSize, int *diffTamanho, uint32_t *tamanhoOriginal)
 {
     FILE *arquivo = fopen(nomeArquivo, "rb");
     if (!arquivo)

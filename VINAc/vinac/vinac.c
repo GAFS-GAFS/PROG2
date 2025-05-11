@@ -222,7 +222,7 @@ int vinac_insert_comp(int argc, char *argv[])
                 fprintf(stderr, "Erro de memória para buffer.\n");
                 continue;
             }
-            novoEmDisco = substituirOuInserirArquivo(argv[i], vc, offset, existente->arquivo.emDisco, 1, buffer, bufferSize, &diffTamanho, &tamOriginal);
+            novoEmDisco = inserirComp(argv[i], vc, offset, existente->arquivo.emDisco, 1, buffer, bufferSize, &diffTamanho, &tamOriginal);
             free(buffer);
             if (novoEmDisco < 0)
             {
@@ -271,7 +271,7 @@ int vinac_insert_comp(int argc, char *argv[])
                 fprintf(stderr, "Erro de memória para buffer.\n");
                 continue;
             }
-            novoEmDisco = substituirOuInserirArquivo(argv[i], vc, offset, 0, 1, buffer, bufferSize, &diffTamanho, &tamOriginal);
+            novoEmDisco = inserirComp(argv[i], vc, offset, 0, 1, buffer, bufferSize, &diffTamanho, &tamOriginal);
             free(buffer);
             if (novoEmDisco < 0)
             {
