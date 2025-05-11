@@ -49,7 +49,7 @@ int carregarIndice(FILE *vc, IndiceArquivador *idx)
     {
         inicializarLista(&idx->lista);
         idx->ultimoUID = 0;
-        return 0;
+        return (0);
     }
 
     // Limpa lista atual se existir
@@ -67,7 +67,7 @@ int carregarIndice(FILE *vc, IndiceArquivador *idx)
         {
             destruirLista(&idx->lista);
             idx->ultimoUID = 0;
-            return -1;
+            return (-1);
         }
 
         inserirArquivoLista(&idx->lista, membro);
