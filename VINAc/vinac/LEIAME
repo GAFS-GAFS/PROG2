@@ -17,9 +17,35 @@ membros.h -> possui a struct que armazena os metadados dos arquivos membros.
 
 A função -ip não atualiza o membro alvo, somente insere os arquivos no final do archive.vc
 
-A função -r remove e move os arquvis binários, mas, quando abre o archive.vc, é possível vizualizar "Structs Fantasmas", ou seja, remove o arquivo binário, mas não a struct do diretório 100%
-
-A função -m membro modifica a ordem no diretório, na primeira execução, ele move os dados binários, porém na segunda execução, ele não realiza mais a troca de dados binários corretamente, sobreescrevendo os dados binários dos outros arquivos, somente as structs são modificados na ordem.
+A função -m membro modifica a ordem no diretório, na primeira execução, ele move os dados binários, porém na segunda execução,
+ele não realiza mais a troca de dados binários corretamente, sobrescrevendo os dados binários dos outros arquivos, somente 
+as structs são modificados na ordem.
 
 ---------------------------------------------- DESCRIÇÃO DO PROJETO ----------------------------------------------
+
+O VINAc é um arquivador desenvolvido em C, com suporte a operações de inserção, listagem, extração, remoção e movimentação de 
+arquivos membros dentro de um arquivo binário principal chamado archive.vc. O sistema foi implementado com foco em manipulação 
+direta de dados binários, respeitando a restrição de utilização de buffers do tamanho do maior arquivo membro em memória.
+
+O projeto utiliza uma lista duplamente encadeada para representar o diretório de arquivos membros presentes no archive.vc. 
+Cada nó da lista contém uma struct com os metadados do arquivo, definidos em membros.h. 
+Esses metadados incluem: nome, UID, tamanho original, tamanho comprimido (se aplicável), data de modificação, ordem e offset 
+no arquivo binário.
+
+Toda leitura e escrita no archive.vc é feita em nível binário, por meio das funções implementadas em arquivo.c. Os dados dos 
+arquivos membros são armazenados de forma contínua no archive.vc, e as operações que alteram o conteúdo (como inserção e 
+movimentação) precisam realocar e regravar dados binários com cuidado para preservar a integridade dos demais membros.
+
+Durante a execução do projeto, me deparei com diversas dificuldades, como a manipulação dos buffers, e a inserção de arquivos
+no archive.vc, fui e voltei muitas vezes durante a programação do projeto, testei coisas que meus amigos falaram que davam certo, 
+para ver se me ajudava, e no final, consegui fazer o projeto funcionar.
+
+Por exemplo, perdi algo de 3 a 4 dias, tentando manipular e usar um vetor como diretório, e quando realizava minha função de 
+inserção,o diretorio era dificil de ser manipulado, e não funcionava, era complicado, dai parei para pensei na lista 
+depois de uma breve conversana porta da sala com um amigo, e percebi que a lista era a melhor opção, e realmente foi, 
+consegui fazer o projeto funcionar, perdi mais uns 2 a 3 dias atualizando o código, para lista, para ai sim voltar 
+a manipular a função de inserção.
+
+Que, a priori, tinha "funcionado", percebi que havia diversos erros e bugs de lógica, e fui corringindo, testando, e consegui 
+chegar nessa implementação atual. A qual não está perfeita, mas está funcional. 
 

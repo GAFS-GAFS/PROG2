@@ -109,15 +109,16 @@ void vinac_insert(int argc, char *argv[], uint32_t compress)
     // Processa cada novo arquivo passado por linha de comando
     for (int i = 3; i < argc; i++)
     {
+
         // Prepara um novo membro
         ArquivoMembro novoMembro;
         strncpy(novoMembro.nome, argv[i], sizeof(novoMembro.nome) - 1);
         novoMembro.nome[sizeof(novoMembro.nome) - 1] = '\0'; // garante que esteja terminado em '\0'
-        novoMembro.uid = indice.ultimoUID + 1;                // gera novo UID
-        indice.ultimoUID = novoMembro.uid;                    // atualiza o último UID usado
-        novoMembro.modificacao = time(NULL);                  // marca a data/hora atual
-        novoMembro.ordem = indice.lista.quantidade;           // ordem de inserção
-        novoMembro.offset = offsetDados;                      // local onde os dados serão inseridos
+        novoMembro.uid = indice.ultimoUID + 1;               // gera novo UID
+        indice.ultimoUID = novoMembro.uid;                   // atualiza o último UID usado
+        novoMembro.modificacao = time(NULL);                 // marca a data/hora atual
+        novoMembro.ordem = indice.lista.quantidade;          // ordem de inserção
+        novoMembro.offset = offsetDados;                     // local onde os dados serão inseridos
 
         uint32_t tamanhoFinal = 0;
 
@@ -418,7 +419,7 @@ void vinac_remove(int argc, char *argv[])
         return;
     }
 
-    const char *arquivoVC = argv[2]; // Nome do arquivo .vc
+    const char *arquivoVC = argv[2];    // Nome do arquivo .vc
     FILE *vc = fopen(arquivoVC, "r+b"); // Abre o arquivo para leitura e escrita binária
 
     // Verifica se o arquivo foi aberto com sucesso
@@ -435,8 +436,8 @@ void vinac_remove(int argc, char *argv[])
     if (carregarIndice(vc, &indice) < 0)
     {
         fprintf(stderr, "Erro ao carregar o índice do arquivador.\n");
-        fclose(vc);                // Fecha o arquivo
-        destruirIndice(&indice);  // Libera estrutura na memória
+        fclose(vc);              // Fecha o arquivo
+        destruirIndice(&indice); // Libera estrutura na memória
         return;
     }
 
@@ -474,7 +475,7 @@ void vinac_list(int argc, char *argv[])
         return;
     }
 
-    const char *arquivoVC = argv[2]; // Nome do arquivo .vc
+    const char *arquivoVC = argv[2];   // Nome do arquivo .vc
     FILE *vc = fopen(arquivoVC, "rb"); // Abre o arquivo para leitura binária
 
     // Verifica se o arquivo existe e foi aberto corretamente
@@ -632,7 +633,7 @@ void vinac_extract(int argc, char *argv[])
 
     // Destrói o índice para liberar memória antes de fechar o arquivo .vc.
     destruirIndice(&indice);
-    fclose(vc);  // Fecha o arquivo .vc.
+    fclose(vc); // Fecha o arquivo .vc.
 }
 
 // Move um arquivo dentro do arquivador .vc

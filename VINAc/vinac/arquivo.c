@@ -404,7 +404,7 @@ int inserirComp(const char *nomeArquivo, FILE *vc, uint64_t offset, uint32_t emD
     return ((int)tamanhoFinal);
 }
 
-//Função para extrair um arquivo do .vc
+// Função para extrair um arquivo do .vc
 int extrairArquivo(FILE *vc, ArquivoMembro membro, const char *pastaDestino)
 {
     char caminhoCompleto[2048];
@@ -473,7 +473,7 @@ int extrairArquivo(FILE *vc, ArquivoMembro membro, const char *pastaDestino)
         // Caso o arquivo não esteja comprimido, apenas copia os dados em blocos
         uint32_t restante = membro.tamanho;
 
-        // ⚠️ Cuidado: buffer alocado na stack pode causar problemas se o arquivo for muito grande
+        // Aloca buffer para leitura
         unsigned char buffer[restante];
 
         // Enquanto ainda houver dados a copiar
