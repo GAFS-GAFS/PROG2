@@ -1,25 +1,20 @@
-# Nome do executável
 TARGET = jogo
 
-# Fontes do projeto
-SRC = main.c menu.c controls.c
+SRC = main.c menu.c controls.c background.c character.c bullet.c pistol.c joystick.c
+OBJ = $(SRC:.c=.o)
 
-# Compilador
 CC = gcc
 
-# Flags do compilador (inclui Allegro)
-CFLAGS = -Wall `pkg-config --cflags allegro-5 allegro_font-5 allegro_ttf-5 allegro_image-5 allegro_primitives-5`
-
-# Bibliotecas Allegro
+CFLAGS = -Wall -std=c11 `pkg-config --cflags allegro-5 allegro_font-5 allegro_ttf-5 allegro_image-5 allegro_primitives-5`
 LDFLAGS = `pkg-config --libs allegro-5 allegro_font-5 allegro_ttf-5 allegro_image-5 allegro_primitives-5`
 
-# Regra padrão
 all: $(TARGET)
 
-# Compilação
-$(TARGET): $(SRC)
-	$(CC) $(SRC) -o $(TARGET) $(CFLAGS) $(LDFLAGS)
+$(TARGET): $(OBJ)
+	$(CC) -o $@ $^ $(LDFLAGS)
 
-# Limpeza
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(OBJ)

@@ -20,7 +20,7 @@ void menuDisplay(ALLEGRO_DISPLAY *display, ALLEGRO_FONT *font, ALLEGRO_EVENT_QUE
         exit(1);
     }
 
-    ALLEGRO_BITMAP *bgm = al_load_bitmap("./imagens/tsm.png"); // carrega imagem do background do menu;
+    ALLEGRO_BITMAP *bgm = al_load_bitmap("./imagens/tsm.png");
 
     if (!bgm)
     {
@@ -71,8 +71,7 @@ void menuDisplay(ALLEGRO_DISPLAY *display, ALLEGRO_FONT *font, ALLEGRO_EVENT_QUE
             {
                 if (option == MENU_START)
                 {
-                    // Aqui você pode iniciar o jogo
-                    break; // Sai do loop do menu
+                    break;
                 }
                 else if (option == MENU_CONTROLS)
                 {
@@ -103,7 +102,7 @@ void menuDisplay(ALLEGRO_DISPLAY *display, ALLEGRO_FONT *font, ALLEGRO_EVENT_QUE
             al_destroy_event_queue(queue);
             al_destroy_font(font);
             al_destroy_display(display);
-            exit(0); // Sai do programa
+            exit(0);
         }
     }
 }
