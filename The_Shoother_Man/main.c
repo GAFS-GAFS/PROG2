@@ -1,14 +1,16 @@
 #include "menu.h"
 #include "background.h"
 #include "character.h"
+#include "bullet.h"
 
 #define X_SCREEN 800
 #define Y_SCREEN 600
-#define GROUND_HEIGHT 48
-#define GROUND_Y (Y_SCREEN - GROUND_HEIGHT)
 
 int main()
 {
+    int ground_height = 150;
+    int ground_y = Y_SCREEN - ground_height;
+
     al_init();
     al_install_keyboard();
     al_init_image_addon();
@@ -27,6 +29,8 @@ int main()
         return (-1);
     }
 
+    load_bullet_sprite("./imagens/bullet.png");
+
     al_register_event_source(queue, al_get_keyboard_event_source());
     al_register_event_source(queue, al_get_display_event_source(display));
     al_register_event_source(queue, al_get_timer_event_source(timer));
@@ -35,9 +39,20 @@ int main()
 
     init_background("./imagens/subway_BG.png");
 
-    // Cria o personagem exatamente em cima do chão
+    // Cria o personagem na esquerda (mas não na extrema esquerda) e perfeitamente em cima do chão
     int player_height = 48;
-    Character *player = createCharacter(32, player_height, X_SCREEN / 2, GROUND_Y - player_height, X_SCREEN, Y_SCREEN);
+    int player_x = 32;
+    Character *player = createCharacter(32, player_height, player_x, ground_y, X_SCREEN, Y_SCREEN, ground_y);
+
+    loadCharacterSprites(player,
+                         "./imagens/walking.png", 6,
+                         "./imagens/jumping.png", 1,
+                         "./imagens/crouching.png", 1,
+                         "./imagens/stop.png", 1,
+                         "./imagens/shootingw.png", 8,
+                         "./imagens/shootingj.png", 2,
+                         "./imagens/shootingc.png", 2,
+                         "./imagens/shootings.png", 2);
 
     al_start_timer(timer);
 
@@ -65,11 +80,11 @@ int main()
                 player->control->left = 1;
                 break;
             case ALLEGRO_KEY_UP:
-                if (!player->jumping && !player->crouching && player->y >= GROUND_Y - player_height)
+                if (!player->jumping && !player->crouching && player->y == ground_y)
                     player->jumping = 1;
                 break;
             case ALLEGRO_KEY_DOWN:
-                if (!player->jumping && player->y >= GROUND_Y - player_height)
+                if (!player->jumping && player->y == ground_y)
                 {
                     player->control->down = 1;
                     player->crouching = 1;
@@ -102,20 +117,20 @@ int main()
         }
         else if (event.type == ALLEGRO_EVENT_TIMER)
         {
-            // Movimento lateral
             if (player->control->right && !player->crouching)
             {
                 moveCharacter(player, caracther_STEP, 0, X_SCREEN, Y_SCREEN);
-                update_background(2.0); // Só move o fundo se andar pra direita
+                update_background(2.0);
             }
             if (player->control->left && !player->crouching)
             {
                 moveCharacter(player, caracther_STEP, 1, X_SCREEN, Y_SCREEN);
-                // Não move o fundo para trás
             }
 
-            positionUpdate(player);
+            positionUpdate(player, ground_y, ground_height);
             bulletUpdate(player);
+
+            updateCharacterState(player);
 
             redraw = true;
         }
@@ -123,9 +138,8 @@ int main()
         {
             al_clear_to_color(al_map_rgb(0, 0, 0));
             draw_background();
-            // Desenha o chão
-            al_draw_filled_rectangle(0, GROUND_Y, X_SCREEN, Y_SCREEN, al_map_rgb(80, 60, 40));
             drawCharacter(player, NULL, false);
+            draw_life_bar(player); // Desenha a barra de vida
             al_flip_display();
             redraw = false;
         }
@@ -136,6 +150,8 @@ int main()
     al_destroy_timer(timer);
     al_destroy_event_queue(queue);
     al_destroy_font(font);
+    destroyCharacterSprites(player);
+    destroy_bullet_sprite();
 
     return (0);
 }

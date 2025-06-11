@@ -1,7 +1,7 @@
 #ifndef __BULLET__
 #define __BULLET__
 
-#define BULLET_MOVE 10
+#define BULLET_MOVE 15
 
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
@@ -26,5 +26,11 @@ bullet *initBullet(unsigned short x, unsigned short y, unsigned char trajectory,
 void moveBullet(bullet *elements);
 
 void destroyBullet(bullet *element);
+
+void load_bullet_sprite(const char *path);
+
+void destroy_bullet_sprite();
+
+void drawBullets(bullet *elements);
 
 #endif

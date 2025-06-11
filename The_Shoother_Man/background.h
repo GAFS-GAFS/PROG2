@@ -12,7 +12,6 @@
 #define X_SCREEN 800
 #define Y_SCREEN 600
 
-
 void init_background(const char *image_path);
 void update_background(float speed);
 void draw_background();
