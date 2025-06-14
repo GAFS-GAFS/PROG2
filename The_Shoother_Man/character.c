@@ -29,12 +29,19 @@ Character *createCharacter(unsigned char side, unsigned char face, unsigned shor
     newCharacter->height = 48;
     newCharacter->control = createJoystick();
     newCharacter->gun = createPistol();
+    newCharacter->fire_cooldown = 0;
 
     if (!newCharacter->control || !newCharacter->gun)
     {
         free(newCharacter);
         return NULL;
     }
+
+    // Inicializa a hitbox
+    newCharacter->hitbox_x = newCharacter->x;
+    newCharacter->hitbox_y = newCharacter->y - newCharacter->height;
+    newCharacter->hitbox_w = newCharacter->width;
+    newCharacter->hitbox_h = newCharacter->height;
 
     return newCharacter;
 }
@@ -70,6 +77,12 @@ void moveCharacter(Character *element, char steps, unsigned char trajectory, uns
         }
         element->side = 1;
     }
+
+    // Atualize a hitbox após mover
+    element->hitbox_x = element->x;
+    element->hitbox_y = element->y - element->height;
+    element->hitbox_w = element->width;
+    element->hitbox_h = element->height;
 }
 
 void shotCharacter(Character *element)
@@ -140,77 +153,139 @@ void destroyCharacter(Character *element)
 
 void loadCharacterSprites(
     Character *ch,
-    const char *walk, int walk_frames,
-    const char *jump, int jump_frames,
-    const char *crouch, int crouch_frames,
-    const char *idle, int idle_frames,
-    const char *walk_shoot, int walk_shoot_frames,
-    const char *jump_shoot, int jump_shoot_frames,
-    const char *crouch_shoot, int crouch_shoot_frames,
-    const char *idle_shoot, int idle_shoot_frames)
+    const char **walk_right, int walk_frames,
+    const char **jump_right, int jump_frames,
+    const char **crouch_right, int crouch_frames,
+    const char **idle_right, int idle_frames,
+    const char **walk_shoot_right, int walk_shoot_frames,
+    const char **jump_shoot_right, int jump_shoot_frames,
+    const char **crouch_shoot_right, int crouch_shoot_frames,
+    const char **idle_shoot_right, int idle_shoot_frames,
+    const char **walk_left, int walk_frames_left,
+    const char **jump_left, int jump_frames_left,
+    const char **crouch_left, int crouch_frames_left,
+    const char **idle_left, int idle_frames_left,
+    const char **walk_shoot_left, int walk_shoot_frames_left,
+    const char **jump_shoot_left, int jump_shoot_frames_left,
+    const char **crouch_shoot_left, int crouch_shoot_frames_left,
+    const char **idle_shoot_left, int idle_shoot_frames_left)
 {
-    ch->walk_spritesheet = al_load_bitmap(walk);
-    ch->jump_spritesheet = al_load_bitmap(jump);
-    ch->crouch_spritesheet = al_load_bitmap(crouch);
-    ch->idle_spritesheet = al_load_bitmap(idle);
-    ch->walk_shoot_spritesheet = al_load_bitmap(walk_shoot);
-    ch->jump_shoot_spritesheet = al_load_bitmap(jump_shoot);
-    ch->crouch_shoot_spritesheet = al_load_bitmap(crouch_shoot);
-    ch->idle_shoot_spritesheet = al_load_bitmap(idle_shoot);
+    int i;
+#define LOAD_FRAMES(arr, src, count)                    \
+    do                                                  \
+    {                                                   \
+        arr = malloc(sizeof(ALLEGRO_BITMAP *) * count); \
+        for (i = 0; i < count; ++i)                     \
+            arr[i] = al_load_bitmap(src[i]);            \
+    } while (0)
 
-    ch->walk_frames = walk_frames;
-    ch->jump_frames = jump_frames;
-    ch->crouch_frames = crouch_frames;
-    ch->idle_frames = idle_frames;
-    ch->walk_shoot_frames = walk_shoot_frames;
-    ch->jump_shoot_frames = jump_shoot_frames;
-    ch->crouch_shoot_frames = crouch_shoot_frames;
-    ch->idle_shoot_frames = idle_shoot_frames;
+    // Direita
+    LOAD_FRAMES(ch->walk_frames_arr_right, walk_right, walk_frames);
+    LOAD_FRAMES(ch->jump_frames_arr_right, jump_right, jump_frames);
+    LOAD_FRAMES(ch->crouch_frames_arr_right, crouch_right, crouch_frames);
+    LOAD_FRAMES(ch->idle_frames_arr_right, idle_right, idle_frames);
+    LOAD_FRAMES(ch->walk_shoot_frames_arr_right, walk_shoot_right, walk_shoot_frames);
+    LOAD_FRAMES(ch->jump_shoot_frames_arr_right, jump_shoot_right, jump_shoot_frames);
+    LOAD_FRAMES(ch->crouch_shoot_frames_arr_right, crouch_shoot_right, crouch_shoot_frames);
+    LOAD_FRAMES(ch->idle_shoot_frames_arr_right, idle_shoot_right, idle_shoot_frames);
+
+    // Esquerda
+    LOAD_FRAMES(ch->walk_frames_arr_left, walk_left, walk_frames_left);
+    LOAD_FRAMES(ch->jump_frames_arr_left, jump_left, jump_frames_left);
+    LOAD_FRAMES(ch->crouch_frames_arr_left, crouch_left, crouch_frames_left);
+    LOAD_FRAMES(ch->idle_frames_arr_left, idle_left, idle_frames_left);
+    LOAD_FRAMES(ch->walk_shoot_frames_arr_left, walk_shoot_left, walk_shoot_frames_left);
+    LOAD_FRAMES(ch->jump_shoot_frames_arr_left, jump_shoot_left, jump_shoot_frames_left);
+    LOAD_FRAMES(ch->crouch_shoot_frames_arr_left, crouch_shoot_left, crouch_shoot_frames_left);
+    LOAD_FRAMES(ch->idle_shoot_frames_arr_left, idle_shoot_left, idle_shoot_frames_left);
+
+    ch->walk_frames_right = walk_frames;
+    ch->jump_frames_right = jump_frames;
+    ch->crouch_frames_right = crouch_frames;
+    ch->idle_frames_right = idle_frames;
+    ch->walk_shoot_frames_right = walk_shoot_frames;
+    ch->jump_shoot_frames_right = jump_shoot_frames;
+    ch->crouch_shoot_frames_right = crouch_shoot_frames;
+    ch->idle_shoot_frames_right = idle_shoot_frames;
+
+    ch->walk_frames_left = walk_frames_left;
+    ch->jump_frames_left = jump_frames_left;
+    ch->crouch_frames_left = crouch_frames_left;
+    ch->idle_frames_left = idle_frames_left;
+    ch->walk_shoot_frames_left = walk_shoot_frames_left;
+    ch->jump_shoot_frames_left = jump_shoot_frames_left;
+    ch->crouch_shoot_frames_left = crouch_shoot_frames_left;
+    ch->idle_shoot_frames_left = idle_shoot_frames_left;
 }
 
 void destroyCharacterSprites(Character *ch)
 {
-    if (ch->walk_spritesheet)
-        al_destroy_bitmap(ch->walk_spritesheet);
-    if (ch->jump_spritesheet)
-        al_destroy_bitmap(ch->jump_spritesheet);
-    if (ch->crouch_spritesheet)
-        al_destroy_bitmap(ch->crouch_spritesheet);
-    if (ch->idle_spritesheet)
-        al_destroy_bitmap(ch->idle_spritesheet);
-    if (ch->walk_shoot_spritesheet)
-        al_destroy_bitmap(ch->walk_shoot_spritesheet);
-    if (ch->jump_shoot_spritesheet)
-        al_destroy_bitmap(ch->jump_shoot_spritesheet);
-    if (ch->crouch_shoot_spritesheet)
-        al_destroy_bitmap(ch->crouch_shoot_spritesheet);
-    if (ch->idle_shoot_spritesheet)
-        al_destroy_bitmap(ch->idle_shoot_spritesheet);
+    int i;
+#define DESTROY_FRAMES(arr, count)             \
+    do                                         \
+    {                                          \
+        if (arr)                               \
+        {                                      \
+            for (i = 0; i < count; ++i)        \
+                if (arr[i])                    \
+                {                              \
+                    al_destroy_bitmap(arr[i]); \
+                    arr[i] = NULL;             \
+                }                              \
+            free(arr);                         \
+            arr = NULL;                        \
+        }                                      \
+    } while (0)
+
+    // Direita
+    DESTROY_FRAMES(ch->walk_frames_arr_right, ch->walk_frames_right);
+    DESTROY_FRAMES(ch->jump_frames_arr_right, ch->jump_frames_right);
+    DESTROY_FRAMES(ch->crouch_frames_arr_right, ch->crouch_frames_right);
+    DESTROY_FRAMES(ch->idle_frames_arr_right, ch->idle_frames_right);
+    DESTROY_FRAMES(ch->walk_shoot_frames_arr_right, ch->walk_shoot_frames_right);
+    DESTROY_FRAMES(ch->jump_shoot_frames_arr_right, ch->jump_shoot_frames_right);
+    DESTROY_FRAMES(ch->crouch_shoot_frames_arr_right, ch->crouch_shoot_frames_right);
+    DESTROY_FRAMES(ch->idle_shoot_frames_arr_right, ch->idle_shoot_frames_right);
+
+    // Esquerda
+    DESTROY_FRAMES(ch->walk_frames_arr_left, ch->walk_frames_left);
+    DESTROY_FRAMES(ch->jump_frames_arr_left, ch->jump_frames_left);
+    DESTROY_FRAMES(ch->crouch_frames_arr_left, ch->crouch_frames_left);
+    DESTROY_FRAMES(ch->idle_frames_arr_left, ch->idle_frames_left);
+    DESTROY_FRAMES(ch->walk_shoot_frames_arr_left, ch->walk_shoot_frames_left);
+    DESTROY_FRAMES(ch->jump_shoot_frames_arr_left, ch->jump_shoot_frames_left);
+    DESTROY_FRAMES(ch->crouch_shoot_frames_arr_left, ch->crouch_shoot_frames_left);
+    DESTROY_FRAMES(ch->idle_shoot_frames_arr_left, ch->idle_shoot_frames_left);
 }
 
-// Função de desenho considerando movimento + tiro
+// Função de desenho considerando movimento + tiro e direção
 void drawCharacter(Character *ch, ALLEGRO_BITMAP *default_sprite, bool flip)
 {
     ALLEGRO_BITMAP *sprite = NULL;
-    int frame_w = ch->width, frame_h = ch->height;
-    int frame = ch->frame;
+    int is_left = (ch->side == 1);
+    int frames_count = 1;
+    ALLEGRO_BITMAP **frames_arr = NULL;
 
     if (ch->shooting)
     {
         switch (ch->state)
         {
         case CHAR_STATE_WALK:
-            sprite = ch->walk_shoot_spritesheet;
+            frames_arr = is_left ? ch->walk_shoot_frames_arr_left : ch->walk_shoot_frames_arr_right;
+            frames_count = is_left ? ch->walk_shoot_frames_left : ch->walk_shoot_frames_right;
             break;
         case CHAR_STATE_JUMP:
-            sprite = ch->jump_shoot_spritesheet;
+            frames_arr = is_left ? ch->jump_shoot_frames_arr_left : ch->jump_shoot_frames_arr_right;
+            frames_count = is_left ? ch->jump_shoot_frames_left : ch->jump_shoot_frames_right;
             break;
         case CHAR_STATE_CROUCH:
-            sprite = ch->crouch_shoot_spritesheet;
+            frames_arr = is_left ? ch->crouch_shoot_frames_arr_left : ch->crouch_shoot_frames_arr_right;
+            frames_count = is_left ? ch->crouch_shoot_frames_left : ch->crouch_shoot_frames_right;
             break;
         case CHAR_STATE_IDLE:
         default:
-            sprite = ch->idle_shoot_spritesheet;
+            frames_arr = is_left ? ch->idle_shoot_frames_arr_left : ch->idle_shoot_frames_arr_right;
+            frames_count = is_left ? ch->idle_shoot_frames_left : ch->idle_shoot_frames_right;
             break;
         }
     }
@@ -219,32 +294,38 @@ void drawCharacter(Character *ch, ALLEGRO_BITMAP *default_sprite, bool flip)
         switch (ch->state)
         {
         case CHAR_STATE_WALK:
-            sprite = ch->walk_spritesheet;
+            frames_arr = is_left ? ch->walk_frames_arr_left : ch->walk_frames_arr_right;
+            frames_count = is_left ? ch->walk_frames_left : ch->walk_frames_right;
             break;
         case CHAR_STATE_JUMP:
-            sprite = ch->jump_spritesheet;
+            frames_arr = is_left ? ch->jump_frames_arr_left : ch->jump_frames_arr_right;
+            frames_count = is_left ? ch->jump_frames_left : ch->jump_frames_right;
             break;
         case CHAR_STATE_CROUCH:
-            sprite = ch->crouch_spritesheet;
+            frames_arr = is_left ? ch->crouch_frames_arr_left : ch->crouch_frames_arr_right;
+            frames_count = is_left ? ch->crouch_frames_left : ch->crouch_frames_right;
             break;
         case CHAR_STATE_IDLE:
         default:
-            sprite = ch->idle_spritesheet;
+            frames_arr = is_left ? ch->idle_frames_arr_left : ch->idle_frames_arr_right;
+            frames_count = is_left ? ch->idle_frames_left : ch->idle_frames_right;
             break;
         }
     }
 
-    if (sprite)
+    int safe_frame = ch->frame;
+    if (frames_count > 0 && safe_frame >= frames_count)
+        safe_frame = 0;
+    if (frames_arr && frames_arr[safe_frame] && al_get_bitmap_width(frames_arr[safe_frame]) > 0)
     {
-        // Desenha o personagem com o ponto de origem nos pés
-        al_draw_bitmap_region(sprite, frame * frame_w, 0, frame_w, frame_h, ch->x, ch->y - ch->height, flip ? ALLEGRO_FLIP_HORIZONTAL : 0);
+        sprite = frames_arr[safe_frame];
+        al_draw_bitmap(sprite, ch->x, ch->y - ch->height, 0);
     }
     else if (default_sprite)
     {
-        al_draw_bitmap(default_sprite, ch->x, ch->y - ch->height, flip ? ALLEGRO_FLIP_HORIZONTAL : 0);
+        al_draw_bitmap(default_sprite, ch->x, ch->y - ch->height, 0);
     }
 
-    // Desenhar as balas do personagem
     drawBullets(ch->gun->shots);
 }
 
@@ -252,11 +333,11 @@ void drawCharacter(Character *ch, ALLEGRO_BITMAP *default_sprite, bool flip)
 void updateCharacterState(Character *ch)
 {
     static int anim_counter = 0;
-    const int anim_speed = 6; // Aumente para deixar mais lento (ex: 4 = troca a cada 4 frames do jogo)
+    const int anim_speed = 6;
 
     if (ch->crouching)
         ch->state = CHAR_STATE_CROUCH;
-    else if (ch->jumping)
+    else if (ch->jumping || ch->y < Y_SCREEN - 150)
         ch->state = CHAR_STATE_JUMP;
     else if (ch->control->left || ch->control->right)
         ch->state = CHAR_STATE_WALK;
@@ -265,22 +346,23 @@ void updateCharacterState(Character *ch)
 
     ch->shooting = ch->control->fire;
 
+    int is_left = (ch->side == 1);
     int frames = 1;
     if (ch->shooting)
     {
         switch (ch->state)
         {
         case CHAR_STATE_WALK:
-            frames = ch->walk_shoot_frames;
+            frames = is_left ? ch->walk_shoot_frames_left : ch->walk_shoot_frames_right;
             break;
         case CHAR_STATE_JUMP:
-            frames = ch->jump_shoot_frames;
+            frames = is_left ? ch->jump_shoot_frames_left : ch->jump_shoot_frames_right;
             break;
         case CHAR_STATE_CROUCH:
-            frames = ch->crouch_shoot_frames;
+            frames = is_left ? ch->crouch_shoot_frames_left : ch->crouch_shoot_frames_right;
             break;
         case CHAR_STATE_IDLE:
-            frames = ch->idle_shoot_frames;
+            frames = is_left ? ch->idle_shoot_frames_left : ch->idle_shoot_frames_right;
             break;
         default:
             frames = 1;
@@ -292,16 +374,16 @@ void updateCharacterState(Character *ch)
         switch (ch->state)
         {
         case CHAR_STATE_WALK:
-            frames = ch->walk_frames;
+            frames = is_left ? ch->walk_frames_left : ch->walk_frames_right;
             break;
         case CHAR_STATE_JUMP:
-            frames = ch->jump_frames;
+            frames = is_left ? ch->jump_frames_left : ch->jump_frames_right;
             break;
         case CHAR_STATE_CROUCH:
-            frames = ch->crouch_frames;
+            frames = is_left ? ch->crouch_frames_left : ch->crouch_frames_right;
             break;
         case CHAR_STATE_IDLE:
-            frames = ch->idle_frames;
+            frames = is_left ? ch->idle_frames_left : ch->idle_frames_right;
             break;
         default:
             frames = 1;
@@ -309,8 +391,12 @@ void updateCharacterState(Character *ch)
         }
     }
 
-    // Controle de velocidade da animação
-    if (frames > 1)
+    if (ch->state == CHAR_STATE_JUMP)
+    {
+        ch->frame = 0;
+        anim_counter = 0;
+    }
+    else if (frames > 1)
     {
         anim_counter++;
         if (anim_counter >= anim_speed)
@@ -364,6 +450,12 @@ void positionUpdate(Character *player, int ground_y, int ground_height)
     {
         player->height = normal_height;
     }
+
+    // Atualize a hitbox após atualizar posição/altura
+    player->hitbox_x = player->x;
+    player->hitbox_y = player->y - player->height;
+    player->hitbox_w = player->width;
+    player->hitbox_h = player->height;
 }
 
 void bulletUpdate(Character *player)
@@ -376,35 +468,32 @@ void bulletUpdate(Character *player)
 
     while (curr)
     {
+        // Atualiza posição da bala conforme a trajetória
         switch (curr->trajectory)
         {
-        case 0:
+        case 0: // Direita
             curr->x += BULLET_MOVE;
             break;
-        case 1:
+        case 1: // Esquerda
             curr->x -= BULLET_MOVE;
             break;
-        case 2:
+        case 2: // Para cima
             curr->y -= BULLET_MOVE;
             break;
-        case 3:
+        case 3: // Para baixo (agachado)
             curr->y += BULLET_MOVE;
             break;
         }
 
+        // Remove balas fora da tela
         if (curr->x < 0 || curr->x > X_SCREEN || curr->y < 0 || curr->y > Y_SCREEN)
         {
             bullet *to_remove = curr;
             if (prev)
-            {
                 prev->next = curr->next;
-                curr = curr->next;
-            }
             else
-            {
                 player->gun->shots = curr->next;
-                curr = player->gun->shots;
-            }
+            curr = curr->next;
             free(to_remove);
         }
         else
@@ -421,35 +510,41 @@ void updateCharacterHp(Character *player, int delta_hp)
         return;
 
     player->hp += delta_hp;
-
     if (player->hp > PLAYER_INITIAL_HP)
-    {
         player->hp = PLAYER_INITIAL_HP;
-    }
     if (player->hp < 0)
-    {
         player->hp = 0;
-    }
 
     printf("HP do jogador atualizado para: %d\n", player->hp);
 }
 
 void draw_life_bar(Character *player)
 {
+    if (!player)
+        return;
+
     int bar_x = 20;
     int bar_y = 20;
-    int bar_width = 100; // barra menor
-    int bar_height = 10; // barra menor
+    int bar_width = 100;
+    int bar_height = 10;
 
     float percent = (float)player->hp / PLAYER_INITIAL_HP;
     if (percent < 0)
         percent = 0;
     int filled = (int)(bar_width * percent);
 
-    // Barra verde (vida atual)
     al_draw_filled_rectangle(bar_x, bar_y, bar_x + filled, bar_y + bar_height, al_map_rgb(0, 200, 0));
-    // Barra vermelha (vida perdida)
     al_draw_filled_rectangle(bar_x + filled, bar_y, bar_x + bar_width, bar_y + bar_height, al_map_rgb(100, 0, 0));
-    // Contorno branco
     al_draw_rectangle(bar_x, bar_y, bar_x + bar_width, bar_y + bar_height, al_map_rgb(255, 255, 255), 2);
+}
+
+// Retorna 1 se houver colisão, 0 caso contrário
+int checkCharacterCollision(Character *a, Character *b)
+{
+    if (!a || !b)
+        return 0;
+    return (a->hitbox_x < b->hitbox_x + b->hitbox_w &&
+            a->hitbox_x + a->hitbox_w > b->hitbox_x &&
+            a->hitbox_y < b->hitbox_y + b->hitbox_h &&
+            a->hitbox_y + a->hitbox_h > b->hitbox_y);
 }

@@ -33,29 +33,53 @@ typedef struct Character
     joystick *control;
     pistol *gun;
 
-    // Spritesheets
-    ALLEGRO_BITMAP *walk_spritesheet;
-    ALLEGRO_BITMAP *jump_spritesheet;
-    ALLEGRO_BITMAP *crouch_spritesheet;
-    ALLEGRO_BITMAP *idle_spritesheet;
-    ALLEGRO_BITMAP *walk_shoot_spritesheet;
-    ALLEGRO_BITMAP *jump_shoot_spritesheet;
-    ALLEGRO_BITMAP *crouch_shoot_spritesheet;
-    ALLEGRO_BITMAP *idle_shoot_spritesheet;
+    // Arrays de frames para cada animação (direita)
+    ALLEGRO_BITMAP **walk_frames_arr_right;
+    ALLEGRO_BITMAP **jump_frames_arr_right;
+    ALLEGRO_BITMAP **crouch_frames_arr_right;
+    ALLEGRO_BITMAP **idle_frames_arr_right;
+    ALLEGRO_BITMAP **walk_shoot_frames_arr_right;
+    ALLEGRO_BITMAP **jump_shoot_frames_arr_right;
+    ALLEGRO_BITMAP **crouch_shoot_frames_arr_right;
+    ALLEGRO_BITMAP **idle_shoot_frames_arr_right;
 
-    // Número de frames por animação
-    int walk_frames;
-    int jump_frames;
-    int crouch_frames;
-    int idle_frames;
-    int walk_shoot_frames;
-    int jump_shoot_frames;
-    int crouch_shoot_frames;
-    int idle_shoot_frames;
+    // Arrays de frames para cada animação (esquerda)
+    ALLEGRO_BITMAP **walk_frames_arr_left;
+    ALLEGRO_BITMAP **jump_frames_arr_left;
+    ALLEGRO_BITMAP **crouch_frames_arr_left;
+    ALLEGRO_BITMAP **idle_frames_arr_left;
+    ALLEGRO_BITMAP **walk_shoot_frames_arr_left;
+    ALLEGRO_BITMAP **jump_shoot_frames_arr_left;
+    ALLEGRO_BITMAP **crouch_shoot_frames_arr_left;
+    ALLEGRO_BITMAP **idle_shoot_frames_arr_left;
+
+    // Número de frames por animação (direita)
+    int walk_frames_right;
+    int jump_frames_right;
+    int crouch_frames_right;
+    int idle_frames_right;
+    int walk_shoot_frames_right;
+    int jump_shoot_frames_right;
+    int crouch_shoot_frames_right;
+    int idle_shoot_frames_right;
+
+    // Número de frames por animação (esquerda)
+    int walk_frames_left;
+    int jump_frames_left;
+    int crouch_frames_left;
+    int idle_frames_left;
+    int walk_shoot_frames_left;
+    int jump_shoot_frames_left;
+    int crouch_shoot_frames_left;
+    int idle_shoot_frames_left;
 
     CharacterState state;
-    int shooting; // 1 se está atirando, 0 caso contrário
-    int frame;    // frame atual da animação
+    int shooting;      // 1 se está atirando, 0 caso contrário
+    int frame;         // frame atual da animação
+    int fire_cooldown; // frames até poder atirar novamente
+
+    // Campos da hitbox
+    int hitbox_x, hitbox_y, hitbox_w, hitbox_h;
 } Character;
 
 Character *createCharacter(unsigned char side, unsigned char face, unsigned short x, unsigned short y, unsigned short max_x, unsigned short max_y, int ground_y);
@@ -77,17 +101,25 @@ void updateCharacterHp(Character *player, int delta_hp);
 
 void updateCharacterState(Character *ch);
 
-// Adicione funções para carregar e liberar spritesheets
+// Funções para carregar e liberar arrays de frames individuais (agora para direita e esquerda)
 void loadCharacterSprites(
     Character *ch,
-    const char *walk, int walk_frames,
-    const char *jump, int jump_frames,
-    const char *crouch, int crouch_frames,
-    const char *idle, int idle_frames,
-    const char *walk_shoot, int walk_shoot_frames,
-    const char *jump_shoot, int jump_shoot_frames,
-    const char *crouch_shoot, int crouch_shoot_frames,
-    const char *idle_shoot, int idle_shoot_frames);
+    const char **walk_right, int walk_frames,
+    const char **jump_right, int jump_frames,
+    const char **crouch_right, int crouch_frames,
+    const char **idle_right, int idle_frames,
+    const char **walk_shoot_right, int walk_shoot_frames,
+    const char **jump_shoot_right, int jump_shoot_frames,
+    const char **crouch_shoot_right, int crouch_shoot_frames,
+    const char **idle_shoot_right, int idle_shoot_frames,
+    const char **walk_left, int walk_frames_left,
+    const char **jump_left, int jump_frames_left,
+    const char **crouch_left, int crouch_frames_left,
+    const char **idle_left, int idle_frames_left,
+    const char **walk_shoot_left, int walk_shoot_frames_left,
+    const char **jump_shoot_left, int jump_shoot_frames_left,
+    const char **crouch_shoot_left, int crouch_shoot_frames_left,
+    const char **idle_shoot_left, int idle_shoot_frames_left);
 void destroyCharacterSprites(Character *ch);
 
 void draw_life_bar(Character *player);
