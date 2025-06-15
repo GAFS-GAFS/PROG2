@@ -2,6 +2,7 @@
 #include "background.h"
 #include "character.h"
 #include "bullet.h"
+#include "enemy.h"
 
 #define X_SCREEN 800
 #define Y_SCREEN 600
@@ -112,6 +113,9 @@ int main()
                          crouch_shoot_imgs_left, 2,
                          idle_shoot_imgs_left, 2);
 
+    // Cria o inimigo como um retângulo simples para teste
+    Enemy *enemy = createEnemy(600, ground_y, 32, 48, 50);
+
     al_start_timer(timer);
 
     ALLEGRO_EVENT event;
@@ -183,24 +187,56 @@ int main()
             {
                 moveCharacter(player, caracther_STEP, 1, X_SCREEN, Y_SCREEN);
             }
-
             // Disparo automático enquanto segura espaço
             if (player->control->fire)
             {
                 if (player->fire_cooldown <= 0)
                 {
                     shotCharacter(player);
-                    player->fire_cooldown = 7; // ajuste: menor = mais rápido (frames entre tiros)
+                    player->fire_cooldown = 7;
                 }
             }
             if (player->fire_cooldown > 0)
                 player->fire_cooldown--;
-
             positionUpdate(player, ground_y, ground_height);
             bulletUpdate(player);
-
             updateCharacterState(player);
-
+            if (enemy)
+            {
+                updateEnemy(enemy, player, ground_y);
+                checkPlayerBulletHitsEnemy(player, enemy);
+                checkEnemyBulletHitsPlayer(enemy, player);
+                if (checkEnemyPlayerCollision(enemy, player))
+                {
+                    updateCharacterHp(player, -2); // Dano por contato
+                }
+                // Remove inimigo se hp <= 0
+                if (enemy->hp <= 0)
+                {
+                    destroyEnemy(enemy);
+                    enemy = NULL;
+                }
+            }
+            if (player->hp <= 0)
+            {
+                ALLEGRO_BITMAP *gameover_img = al_load_bitmap("./imagens/tsmGO.png");
+                al_clear_to_color(al_map_rgb(255, 255, 255));
+                if (gameover_img)
+                {
+                    int img_w = al_get_bitmap_width(gameover_img);
+                    int img_h = al_get_bitmap_height(gameover_img);
+                    al_draw_bitmap(gameover_img, (X_SCREEN - img_w) / 2, (Y_SCREEN - img_h) / 2, 0);
+                    al_destroy_bitmap(gameover_img);
+                }
+                else
+                {
+                    al_draw_text(font, al_map_rgb(255, 0, 0), X_SCREEN / 2, Y_SCREEN / 2 - 20, ALLEGRO_ALIGN_CENTER, "GAME OVER");
+                }
+                al_flip_display();
+                al_rest(2.0); // Espera 2 segundos
+                running = false;
+                continue;
+            }
             redraw = true;
         }
         if (redraw && al_is_event_queue_empty(queue))
@@ -208,6 +244,8 @@ int main()
             al_clear_to_color(al_map_rgb(0, 0, 0));
             draw_background();
             drawCharacter(player, NULL, false);
+            if (enemy)
+                drawEnemy(enemy);  // Desenha o inimigo
             draw_life_bar(player); // Desenha a barra de vida
             al_flip_display();
             redraw = false;
@@ -221,6 +259,7 @@ int main()
     al_destroy_font(font);
     destroyCharacterSprites(player);
     destroy_bullet_sprite();
+    destroyEnemy(enemy);
 
     return (0);
 }

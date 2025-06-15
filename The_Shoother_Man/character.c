@@ -151,6 +151,35 @@ void destroyCharacter(Character *element)
     free(element);
 }
 
+void load_frames(ALLEGRO_BITMAP ***arr, const char **src, int count)
+{
+    if (count <= 0)
+    {
+        *arr = NULL;
+        return;
+    }
+    *arr = malloc(sizeof(ALLEGRO_BITMAP *) * count);
+    for (int i = 0; i < count; ++i)
+    {
+        (*arr)[i] = al_load_bitmap(src[i]);
+    }
+}
+
+void destroy_frames(ALLEGRO_BITMAP **arr, int count)
+{
+    if (!arr)
+        return;
+    for (int i = 0; i < count; ++i)
+    {
+        if (arr[i])
+        {
+            al_destroy_bitmap(arr[i]);
+            arr[i] = NULL;
+        }
+    }
+    free(arr);
+}
+
 void loadCharacterSprites(
     Character *ch,
     const char **walk_right, int walk_frames,
@@ -170,34 +199,23 @@ void loadCharacterSprites(
     const char **crouch_shoot_left, int crouch_shoot_frames_left,
     const char **idle_shoot_left, int idle_shoot_frames_left)
 {
-    int i;
-#define LOAD_FRAMES(arr, src, count)                    \
-    do                                                  \
-    {                                                   \
-        arr = malloc(sizeof(ALLEGRO_BITMAP *) * count); \
-        for (i = 0; i < count; ++i)                     \
-            arr[i] = al_load_bitmap(src[i]);            \
-    } while (0)
+    load_frames(&ch->walk_frames_arr_right, walk_right, walk_frames);
+    load_frames(&ch->jump_frames_arr_right, jump_right, jump_frames);
+    load_frames(&ch->crouch_frames_arr_right, crouch_right, crouch_frames);
+    load_frames(&ch->idle_frames_arr_right, idle_right, idle_frames);
+    load_frames(&ch->walk_shoot_frames_arr_right, walk_shoot_right, walk_shoot_frames);
+    load_frames(&ch->jump_shoot_frames_arr_right, jump_shoot_right, jump_shoot_frames);
+    load_frames(&ch->crouch_shoot_frames_arr_right, crouch_shoot_right, crouch_shoot_frames);
+    load_frames(&ch->idle_shoot_frames_arr_right, idle_shoot_right, idle_shoot_frames);
 
-    // Direita
-    LOAD_FRAMES(ch->walk_frames_arr_right, walk_right, walk_frames);
-    LOAD_FRAMES(ch->jump_frames_arr_right, jump_right, jump_frames);
-    LOAD_FRAMES(ch->crouch_frames_arr_right, crouch_right, crouch_frames);
-    LOAD_FRAMES(ch->idle_frames_arr_right, idle_right, idle_frames);
-    LOAD_FRAMES(ch->walk_shoot_frames_arr_right, walk_shoot_right, walk_shoot_frames);
-    LOAD_FRAMES(ch->jump_shoot_frames_arr_right, jump_shoot_right, jump_shoot_frames);
-    LOAD_FRAMES(ch->crouch_shoot_frames_arr_right, crouch_shoot_right, crouch_shoot_frames);
-    LOAD_FRAMES(ch->idle_shoot_frames_arr_right, idle_shoot_right, idle_shoot_frames);
-
-    // Esquerda
-    LOAD_FRAMES(ch->walk_frames_arr_left, walk_left, walk_frames_left);
-    LOAD_FRAMES(ch->jump_frames_arr_left, jump_left, jump_frames_left);
-    LOAD_FRAMES(ch->crouch_frames_arr_left, crouch_left, crouch_frames_left);
-    LOAD_FRAMES(ch->idle_frames_arr_left, idle_left, idle_frames_left);
-    LOAD_FRAMES(ch->walk_shoot_frames_arr_left, walk_shoot_left, walk_shoot_frames_left);
-    LOAD_FRAMES(ch->jump_shoot_frames_arr_left, jump_shoot_left, jump_shoot_frames_left);
-    LOAD_FRAMES(ch->crouch_shoot_frames_arr_left, crouch_shoot_left, crouch_shoot_frames_left);
-    LOAD_FRAMES(ch->idle_shoot_frames_arr_left, idle_shoot_left, idle_shoot_frames_left);
+    load_frames(&ch->walk_frames_arr_left, walk_left, walk_frames_left);
+    load_frames(&ch->jump_frames_arr_left, jump_left, jump_frames_left);
+    load_frames(&ch->crouch_frames_arr_left, crouch_left, crouch_frames_left);
+    load_frames(&ch->idle_frames_arr_left, idle_left, idle_frames_left);
+    load_frames(&ch->walk_shoot_frames_arr_left, walk_shoot_left, walk_shoot_frames_left);
+    load_frames(&ch->jump_shoot_frames_arr_left, jump_shoot_left, jump_shoot_frames_left);
+    load_frames(&ch->crouch_shoot_frames_arr_left, crouch_shoot_left, crouch_shoot_frames_left);
+    load_frames(&ch->idle_shoot_frames_arr_left, idle_shoot_left, idle_shoot_frames_left);
 
     ch->walk_frames_right = walk_frames;
     ch->jump_frames_right = jump_frames;
@@ -220,42 +238,23 @@ void loadCharacterSprites(
 
 void destroyCharacterSprites(Character *ch)
 {
-    int i;
-#define DESTROY_FRAMES(arr, count)             \
-    do                                         \
-    {                                          \
-        if (arr)                               \
-        {                                      \
-            for (i = 0; i < count; ++i)        \
-                if (arr[i])                    \
-                {                              \
-                    al_destroy_bitmap(arr[i]); \
-                    arr[i] = NULL;             \
-                }                              \
-            free(arr);                         \
-            arr = NULL;                        \
-        }                                      \
-    } while (0)
+    destroy_frames(ch->walk_frames_arr_right, ch->walk_frames_right);
+    destroy_frames(ch->jump_frames_arr_right, ch->jump_frames_right);
+    destroy_frames(ch->crouch_frames_arr_right, ch->crouch_frames_right);
+    destroy_frames(ch->idle_frames_arr_right, ch->idle_frames_right);
+    destroy_frames(ch->walk_shoot_frames_arr_right, ch->walk_shoot_frames_right);
+    destroy_frames(ch->jump_shoot_frames_arr_right, ch->jump_shoot_frames_right);
+    destroy_frames(ch->crouch_shoot_frames_arr_right, ch->crouch_shoot_frames_right);
+    destroy_frames(ch->idle_shoot_frames_arr_right, ch->idle_shoot_frames_right);
 
-    // Direita
-    DESTROY_FRAMES(ch->walk_frames_arr_right, ch->walk_frames_right);
-    DESTROY_FRAMES(ch->jump_frames_arr_right, ch->jump_frames_right);
-    DESTROY_FRAMES(ch->crouch_frames_arr_right, ch->crouch_frames_right);
-    DESTROY_FRAMES(ch->idle_frames_arr_right, ch->idle_frames_right);
-    DESTROY_FRAMES(ch->walk_shoot_frames_arr_right, ch->walk_shoot_frames_right);
-    DESTROY_FRAMES(ch->jump_shoot_frames_arr_right, ch->jump_shoot_frames_right);
-    DESTROY_FRAMES(ch->crouch_shoot_frames_arr_right, ch->crouch_shoot_frames_right);
-    DESTROY_FRAMES(ch->idle_shoot_frames_arr_right, ch->idle_shoot_frames_right);
-
-    // Esquerda
-    DESTROY_FRAMES(ch->walk_frames_arr_left, ch->walk_frames_left);
-    DESTROY_FRAMES(ch->jump_frames_arr_left, ch->jump_frames_left);
-    DESTROY_FRAMES(ch->crouch_frames_arr_left, ch->crouch_frames_left);
-    DESTROY_FRAMES(ch->idle_frames_arr_left, ch->idle_frames_left);
-    DESTROY_FRAMES(ch->walk_shoot_frames_arr_left, ch->walk_shoot_frames_left);
-    DESTROY_FRAMES(ch->jump_shoot_frames_arr_left, ch->jump_shoot_frames_left);
-    DESTROY_FRAMES(ch->crouch_shoot_frames_arr_left, ch->crouch_shoot_frames_left);
-    DESTROY_FRAMES(ch->idle_shoot_frames_arr_left, ch->idle_shoot_frames_left);
+    destroy_frames(ch->walk_frames_arr_left, ch->walk_frames_left);
+    destroy_frames(ch->jump_frames_arr_left, ch->jump_frames_left);
+    destroy_frames(ch->crouch_frames_arr_left, ch->crouch_frames_left);
+    destroy_frames(ch->idle_frames_arr_left, ch->idle_frames_left);
+    destroy_frames(ch->walk_shoot_frames_arr_left, ch->walk_shoot_frames_left);
+    destroy_frames(ch->jump_shoot_frames_arr_left, ch->jump_shoot_frames_left);
+    destroy_frames(ch->crouch_shoot_frames_arr_left, ch->crouch_shoot_frames_left);
+    destroy_frames(ch->idle_shoot_frames_arr_left, ch->idle_shoot_frames_left);
 }
 
 // Função de desenho considerando movimento + tiro e direção
@@ -327,6 +326,11 @@ void drawCharacter(Character *ch, ALLEGRO_BITMAP *default_sprite, bool flip)
     }
 
     drawBullets(ch->gun->shots);
+    al_draw_rectangle(
+        ch->hitbox_x, ch->hitbox_y,
+        ch->hitbox_x + ch->hitbox_w,
+        ch->hitbox_y + ch->hitbox_h,
+        al_map_rgb(255, 0, 0), 2);
 }
 
 // Atualize o estado e a flag shooting

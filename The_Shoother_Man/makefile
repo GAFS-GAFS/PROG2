@@ -1,6 +1,6 @@
 TARGET = jogo
 
-SRC = main.c menu.c controls.c background.c character.c bullet.c pistol.c joystick.c
+SRC = main.c menu.c controls.c background.c character.c bullet.c pistol.c joystick.c enemy.c
 OBJ = $(SRC:.c=.o)
 
 CC = gcc

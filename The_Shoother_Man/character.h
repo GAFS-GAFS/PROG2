@@ -1,5 +1,5 @@
-#ifndef Character_H
-#define caracther_H
+#ifndef CHARACTER_H
+#define CHARACTER_H
 
 #include "joystick.h"
 #include "pistol.h"
