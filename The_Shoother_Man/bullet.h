@@ -28,6 +28,7 @@ void moveBullet(bullet *elements);
 void destroyBullet(bullet *element);
 
 void load_bullet_sprite(const char *path);
+void load_lbullet_sprite(const char *path);
 
 void destroy_bullet_sprite();
 

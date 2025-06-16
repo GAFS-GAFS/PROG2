@@ -3,11 +3,18 @@
 #include <allegro5/allegro_image.h>
 
 static ALLEGRO_BITMAP *bullet_sprite = NULL;
+static ALLEGRO_BITMAP *lbullet_sprite = NULL;
 
 void load_bullet_sprite(const char *path)
 {
     if (!bullet_sprite)
         bullet_sprite = al_load_bitmap(path);
+}
+
+void load_lbullet_sprite(const char *path)
+{
+    if (!lbullet_sprite)
+        lbullet_sprite = al_load_bitmap(path);
 }
 
 void destroy_bullet_sprite()
@@ -17,14 +24,27 @@ void destroy_bullet_sprite()
         al_destroy_bitmap(bullet_sprite);
         bullet_sprite = NULL;
     }
+    if (lbullet_sprite)
+    {
+        al_destroy_bitmap(lbullet_sprite);
+        lbullet_sprite = NULL;
+    }
 }
 
 void drawBullets(bullet *elements)
 {
     for (bullet *current = elements; current != NULL; current = (bullet *)current->next)
     {
-        if (bullet_sprite)
-            al_draw_bitmap(bullet_sprite, current->x, current->y, 0);
+        if (current->trajectory == 1) // Esquerda
+        {
+            if (lbullet_sprite)
+                al_draw_bitmap(lbullet_sprite, current->x, current->y, 0);
+        }
+        else // Direita ou outras
+        {
+            if (bullet_sprite)
+                al_draw_bitmap(bullet_sprite, current->x, current->y, 0);
+        }
     }
 }
 

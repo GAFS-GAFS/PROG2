@@ -31,6 +31,7 @@ int main()
     }
 
     load_bullet_sprite("./imagens/bullet.png");
+    load_lbullet_sprite("./imagens/Lbullet.png");
 
     al_register_event_source(queue, al_get_keyboard_event_source());
     al_register_event_source(queue, al_get_display_event_source(display));
@@ -62,7 +63,6 @@ int main()
         memset(player->control, 0, sizeof(*(player->control)));
     }
 
-    // Arrays de caminhos para cada frame de cada animação (direita)
     const char *walk_imgs_right[] = {
         "./imagens/Character3.png", "./imagens/Character4.png", "./imagens/Character5.png",
         "./imagens/Character6.png", "./imagens/Character7.png", "./imagens/Character8.png", "./imagens/Character9.png"};
@@ -113,8 +113,31 @@ int main()
                          crouch_shoot_imgs_left, 2,
                          idle_shoot_imgs_left, 2);
 
-    // Cria o inimigo como um retângulo simples para teste
+    // Arrays de caminhos para cada frame de cada animação do inimigo (direita)
+    const char *enemy_walk_imgs_right[] = {"./imagens/Enemy4.png", "./imagens/Enemy5.png",
+                                           "./imagens/Enemy6.png", "./imagens/Enemy7.png", "./imagens/Enemy8.png",
+                                           "./imagens/Enemy9.png", "./imagens/Enemy10.png", "./imagens/Enemy11.png"};
+    const char *enemy_idle_imgs_right[] = {"./imagens/Enemy1.png"};
+    // Arrays de caminhos para cada frame de cada animação do inimigo (esquerda)
+    const char *enemy_walk_imgs_left[] = {"./imagens/LEnemy4.png", "./imagens/LEnemy5.png",
+                                          "./imagens/LEnemy6.png", "./imagens/LEnemy7.png", "./imagens/LEnemy8.png",
+                                          "./imagens/LEnemy9.png", "./imagens/LEnemy10.png", "./imagens/LEnemy11.png"};
+    const char *enemy_idle_imgs_left[] = {"./imagens/LEnemy1.png"};
+
+    int enemies_spawned = 0;
+    int max_enemies = 6;
     Enemy *enemy = createEnemy(600, ground_y, 32, 48, 50);
+    // Carrega as sprites do inimigo APÓS criar o Enemy
+    loadEnemySprites(enemy,
+                     enemy_walk_imgs_right, 8,
+                     enemy_idle_imgs_right, 1,
+                     NULL, 0, // walk_shoot_right
+                     NULL, 0, // idle_shoot_right
+                     enemy_walk_imgs_left, 8,
+                     enemy_idle_imgs_left, 1,
+                     NULL, 0, // walk_shoot_left
+                     NULL, 0  // idle_shoot_left
+    );
 
     al_start_timer(timer);
 
@@ -204,18 +227,51 @@ int main()
             if (enemy)
             {
                 updateEnemy(enemy, player, ground_y);
+                // Animação do inimigo: incrementa frame
+                if (enemy->state == 1 && enemy->walk_frames_right > 0)
+                {
+                    enemy->frame = (enemy->frame + 1) % ((enemy->direction == 1) ? enemy->walk_frames_left : enemy->walk_frames_right);
+                }
+                else if (enemy->state == 0 && enemy->idle_frames_right > 0)
+                {
+                    enemy->frame = (enemy->frame + 1) % ((enemy->direction == 1) ? enemy->idle_frames_left : enemy->idle_frames_right);
+                }
+                else
+                {
+                    enemy->frame = 0;
+                }
                 checkPlayerBulletHitsEnemy(player, enemy);
                 checkEnemyBulletHitsPlayer(enemy, player);
                 if (checkEnemyPlayerCollision(enemy, player))
                 {
                     updateCharacterHp(player, -2); // Dano por contato
                 }
-                // Remove inimigo se hp <= 0
                 if (enemy->hp <= 0)
                 {
+                    destroyEnemySprites(enemy);
                     destroyEnemy(enemy);
                     enemy = NULL;
                 }
+            }
+            // Spawna novo inimigo se o anterior morreu e não atingiu o limite
+            if (!enemy && enemies_spawned < max_enemies)
+            {
+                int min_x = X_SCREEN / 2;
+                int max_x = X_SCREEN - 32;
+                int spawn_x = min_x + rand() % (max_x - min_x + 1);
+                enemy = createEnemy(spawn_x, ground_y, 32, 48, 50);
+                loadEnemySprites(enemy,
+                                 enemy_walk_imgs_right, 8,
+                                 enemy_idle_imgs_right, 1,
+                                 NULL, 0, // walk_shoot_right
+                                 NULL, 0, // idle_shoot_right
+                                 enemy_walk_imgs_left, 8,
+                                 enemy_idle_imgs_left, 1,
+                                 NULL, 0, // walk_shoot_left
+                                 NULL, 0  // idle_shoot_left
+                );
+                printf("personagem nascido\n");
+                enemies_spawned++;
             }
             if (player->hp <= 0)
             {
@@ -233,7 +289,7 @@ int main()
                     al_draw_text(font, al_map_rgb(255, 0, 0), X_SCREEN / 2, Y_SCREEN / 2 - 20, ALLEGRO_ALIGN_CENTER, "GAME OVER");
                 }
                 al_flip_display();
-                al_rest(2.0); // Espera 2 segundos
+                al_rest(2.0);
                 running = false;
                 continue;
             }
@@ -259,6 +315,9 @@ int main()
     al_destroy_font(font);
     destroyCharacterSprites(player);
     destroy_bullet_sprite();
+    // Libera as sprites do inimigo antes de destruir o Enemy
+    if (enemy)
+        destroyEnemySprites(enemy);
     destroyEnemy(enemy);
 
     return (0);
