@@ -7,6 +7,9 @@
 #define X_SCREEN 800
 #define Y_SCREEN 600
 
+// Variável global para controle de tiro para cima
+int shooting_up = 0;
+
 int main()
 {
     int ground_height = 150;
@@ -95,6 +98,37 @@ int main()
         "./imagens/LCharacter13.png",
     };
 
+    const char *walk_shoot_up_imgs_right[] = {
+        "./imagens/Character27.png",
+        "./imagens/Character28.png",
+        "./imagens/Character29.png",
+        "./imagens/Character30.png",
+        "./imagens/Character31.png",
+        "./imagens/Character32.png",
+        "./imagens/Character33.png",
+        "./imagens/Character34.png",
+        "./imagens/Character35.png"};
+
+    const char *idle_shoot_up_imgs_right[] = {
+        "./imagens/Character38.png", "./imagens/Character39.png"};
+    const char *jump_shoot_up_imgs_right[] = {
+        "./imagens/Character36.png", "./imagens/Character37.png"};
+
+    const char *walk_shoot_up_imgs_left[] = {
+        "./imagens/LCharacter27.png",
+        "./imagens/LCharacter28.png",
+        "./imagens/LCharacter29.png",
+        "./imagens/LCharacter30.png",
+        "./imagens/LCharacter31.png",
+        "./imagens/LCharacter32.png",
+        "./imagens/LCharacter33.png",
+        "./imagens/LCharacter34.png",
+        "./imagens/LCharacter35.png"};
+    const char *idle_shoot_up_imgs_left[] = {
+        "./imagens/LCharacter38.png", "./imagens/LCharacter39.png"};
+    const char *jump_shoot_up_imgs_left[] = {
+        "./imagens/LCharacter36.png", "./imagens/LCharacter37.png"};
+
     loadCharacterSprites(player,
                          walk_imgs_right, 7,
                          jump_imgs_right, 1,
@@ -104,6 +138,9 @@ int main()
                          jump_shoot_imgs_right, 2,
                          crouch_shoot_imgs_right, 2,
                          idle_shoot_imgs_right, 2,
+                         walk_shoot_up_imgs_right, 9,
+                         jump_shoot_up_imgs_right, 2,
+                         idle_shoot_up_imgs_right, 2,
                          walk_imgs_left, 7,
                          jump_imgs_left, 1,
                          crouch_imgs_left, 1,
@@ -111,18 +148,23 @@ int main()
                          walk_shoot_imgs_left, 9,
                          jump_shoot_imgs_left, 2,
                          crouch_shoot_imgs_left, 2,
-                         idle_shoot_imgs_left, 2);
+                         idle_shoot_imgs_left, 2,
+                         walk_shoot_up_imgs_left, 9,
+                         jump_shoot_up_imgs_left, 2,
+                         idle_shoot_up_imgs_left, 2);
 
     // Arrays de caminhos para cada frame de cada animação do inimigo (direita)
     const char *enemy_walk_imgs_right[] = {"./imagens/Enemy4.png", "./imagens/Enemy5.png",
                                            "./imagens/Enemy6.png", "./imagens/Enemy7.png", "./imagens/Enemy8.png",
                                            "./imagens/Enemy9.png", "./imagens/Enemy10.png", "./imagens/Enemy11.png"};
     const char *enemy_idle_imgs_right[] = {"./imagens/Enemy1.png"};
+    const char *enemy_idle_shoot_imgs_right[] = {"./imagens/Enemy2.png", "./imagens/Enemy3.png"};
     // Arrays de caminhos para cada frame de cada animação do inimigo (esquerda)
     const char *enemy_walk_imgs_left[] = {"./imagens/LEnemy4.png", "./imagens/LEnemy5.png",
                                           "./imagens/LEnemy6.png", "./imagens/LEnemy7.png", "./imagens/LEnemy8.png",
                                           "./imagens/LEnemy9.png", "./imagens/LEnemy10.png", "./imagens/LEnemy11.png"};
     const char *enemy_idle_imgs_left[] = {"./imagens/LEnemy1.png"};
+    const char *enemy_idle_shoot_imgs_left[] = {"./imagens/LEnemy2.png", "./imagens/LEnemy3.png"};
 
     int enemies_spawned = 0;
     int max_enemies = 6;
@@ -132,12 +174,11 @@ int main()
                      enemy_walk_imgs_right, 8,
                      enemy_idle_imgs_right, 1,
                      NULL, 0, // walk_shoot_right
-                     NULL, 0, // idle_shoot_right
+                     enemy_idle_shoot_imgs_right, 2,
                      enemy_walk_imgs_left, 8,
                      enemy_idle_imgs_left, 1,
                      NULL, 0, // walk_shoot_left
-                     NULL, 0  // idle_shoot_left
-    );
+                     enemy_idle_shoot_imgs_left, 1);
 
     al_start_timer(timer);
 
@@ -178,6 +219,9 @@ int main()
             case ALLEGRO_KEY_SPACE:
                 player->control->fire = 1;
                 break;
+            case ALLEGRO_KEY_V:
+                shooting_up = 1;
+                break;
             }
         }
         else if (event.type == ALLEGRO_EVENT_KEY_UP)
@@ -197,6 +241,9 @@ int main()
             case ALLEGRO_KEY_SPACE:
                 player->control->fire = 0;
                 break;
+            case ALLEGRO_KEY_V:
+                shooting_up = 0;
+                break;
             }
         }
         else if (event.type == ALLEGRO_EVENT_TIMER)
@@ -210,12 +257,21 @@ int main()
             {
                 moveCharacter(player, caracther_STEP, 1, X_SCREEN, Y_SCREEN);
             }
-            // Disparo automático enquanto segura espaço
-            if (player->control->fire)
+            // Disparo automático enquanto segura espaço ou V
+            if ((player->control->fire || shooting_up))
             {
                 if (player->fire_cooldown <= 0)
                 {
-                    shotCharacter(player);
+                    if (shooting_up)
+                    {
+                        shotCharacterUp(player);
+                        // printf("Atirando para cima!\n");
+                    }
+                    else
+                    {
+                        shotCharacter(player);
+                        // printf("Atirando normal!\n");
+                    }
                     player->fire_cooldown = 7;
                 }
             }
@@ -227,19 +283,7 @@ int main()
             if (enemy)
             {
                 updateEnemy(enemy, player, ground_y);
-                // Animação do inimigo: incrementa frame
-                if (enemy->state == 1 && enemy->walk_frames_right > 0)
-                {
-                    enemy->frame = (enemy->frame + 1) % ((enemy->direction == 1) ? enemy->walk_frames_left : enemy->walk_frames_right);
-                }
-                else if (enemy->state == 0 && enemy->idle_frames_right > 0)
-                {
-                    enemy->frame = (enemy->frame + 1) % ((enemy->direction == 1) ? enemy->idle_frames_left : enemy->idle_frames_right);
-                }
-                else
-                {
-                    enemy->frame = 0;
-                }
+                updateEnemyStateAndFrame(enemy);
                 checkPlayerBulletHitsEnemy(player, enemy);
                 checkEnemyBulletHitsPlayer(enemy, player);
                 if (checkEnemyPlayerCollision(enemy, player))
@@ -264,12 +308,11 @@ int main()
                                  enemy_walk_imgs_right, 8,
                                  enemy_idle_imgs_right, 1,
                                  NULL, 0, // walk_shoot_right
-                                 NULL, 0, // idle_shoot_right
+                                 enemy_idle_shoot_imgs_right, 2,
                                  enemy_walk_imgs_left, 8,
                                  enemy_idle_imgs_left, 1,
                                  NULL, 0, // walk_shoot_left
-                                 NULL, 0  // idle_shoot_left
-                );
+                                 enemy_idle_shoot_imgs_left, 1);
                 printf("personagem nascido\n");
                 enemies_spawned++;
             }

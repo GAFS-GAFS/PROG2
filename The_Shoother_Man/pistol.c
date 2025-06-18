@@ -16,19 +16,26 @@ pistol *createPistol()
     return (newPistol);
 }
 
+// Altere a assinatura da função firePistol para bater exatamente com o header pistol.h:
 bullet *firePistol(unsigned short x, unsigned short y, unsigned char trajectory, pistol *gun)
 {
-    unsigned char damage = 10;
-
-    bullet *newBullet = initBullet(x, y, trajectory, damage, gun->shots);
-
-    if (!newBullet)
+    if (!gun)
     {
-        fprintf(stderr, "Falha ao criar a bala.\n");
-        return (NULL);
+        printf("firePistol: gun nulo\n");
+        return NULL;
     }
-
-    return (newBullet);
+    bullet *b = malloc(sizeof(bullet));
+    if (!b)
+    {
+        printf("firePistol: malloc falhou\n");
+        return NULL;
+    }
+    b->x = x;
+    b->y = y;
+    b->trajectory = trajectory;
+    b->damage = 10;
+    b->next = NULL;
+    return b;
 }
 
 void destroyPistol(pistol *element)

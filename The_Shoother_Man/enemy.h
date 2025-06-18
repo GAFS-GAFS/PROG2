@@ -39,6 +39,9 @@ typedef struct Enemy
     int frame;
     ALLEGRO_BITMAP *sprite;
     pistol *gun;
+    // --- Novos campos para patrulha ---
+    int patrol_timer;     // tempo restante andando/parado
+    int patrol_dir_timer; // tempo até trocar direção
 } Enemy;
 
 Enemy *createEnemy(int x, int y, int width, int height, int hp);
@@ -61,5 +64,6 @@ void loadEnemySprites(Enemy *enemy,
                       const char **walk_shoot_left, int walk_shoot_frames_left,
                       const char **idle_shoot_left, int idle_shoot_frames_left);
 void destroyEnemySprites(Enemy *enemy);
+void updateEnemyStateAndFrame(Enemy *enemy);
 
 #endif

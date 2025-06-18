@@ -93,19 +93,25 @@ void shotCharacter(Character *element)
     unsigned char trajectory = 0;
     int bullet_width = 16;
     int bullet_height = 16;
-    unsigned short bullet_x = element->x + element->width / 2 - bullet_width / 2;
-    unsigned short bullet_y = element->y - element->height / 2 - bullet_height / 2;
+    unsigned short bullet_x;
+    unsigned short bullet_y;
 
     if (element->crouching)
     {
-        trajectory = 3;
-        bullet_y = element->y - bullet_height / 2;
+        // Ao agachar, atira para o lado em que está virado, a partir do meio da hitbox lateral
+        trajectory = element->side;
+        bullet_y = element->hitbox_y + element->hitbox_h / 2 - bullet_height / 2;
+        if (element->side == 0) // Direita
+            bullet_x = element->hitbox_x + element->hitbox_w - bullet_width / 2;
+        else // Esquerda
+            bullet_x = element->hitbox_x - bullet_width / 2;
         if ((int)bullet_y < 0)
             bullet_y = 0;
     }
     else if (element->control->up)
     {
         trajectory = 2;
+        bullet_x = element->x + element->width / 2 - bullet_width / 2;
         bullet_y = element->y - element->height - bullet_height / 2;
         if ((int)bullet_y < 0)
             bullet_y = 0;
@@ -113,17 +119,14 @@ void shotCharacter(Character *element)
     else
     {
         trajectory = element->side;
+        bullet_x = element->x + element->width / 2 - bullet_width / 2;
+        bullet_y = element->y - element->height / 2 - bullet_height / 2;
     }
 
     if (bullet_x > X_SCREEN)
-    {
         bullet_x = X_SCREEN - 1;
-    }
-
     if (bullet_y > Y_SCREEN)
-    {
         bullet_y = Y_SCREEN - 1;
-    }
 
     if (bullet_x < X_SCREEN && bullet_y < Y_SCREEN)
     {
@@ -134,6 +137,27 @@ void shotCharacter(Character *element)
             new_bullet->next = element->gun->shots;
             element->gun->shots = new_bullet;
         }
+    }
+}
+
+void shotCharacterUp(Character *element)
+{
+    if (!element || !element->gun)
+        return;
+
+    int bullet_width = 16;
+    int bullet_height = 16;
+    unsigned short bullet_x = element->x + element->width / 2 - bullet_width / 2;
+    unsigned short bullet_y = element->y - element->height - bullet_height / 2;
+
+    if ((int)bullet_y < 0)
+        bullet_y = 0;
+
+    bullet *new_bullet = firePistol(bullet_x, bullet_y, 2, element->gun);
+    if (new_bullet)
+    {
+        new_bullet->next = element->gun->shots;
+        element->gun->shots = new_bullet;
     }
 }
 
@@ -190,6 +214,9 @@ void loadCharacterSprites(
     const char **jump_shoot_right, int jump_shoot_frames,
     const char **crouch_shoot_right, int crouch_shoot_frames,
     const char **idle_shoot_right, int idle_shoot_frames,
+    const char **walk_shoot_up_right, int walk_shoot_up_frames,
+    const char **jump_shoot_up_right, int jump_shoot_up_frames,
+    const char **idle_shoot_up_right, int idle_shoot_up_frames,
     const char **walk_left, int walk_frames_left,
     const char **jump_left, int jump_frames_left,
     const char **crouch_left, int crouch_frames_left,
@@ -197,7 +224,10 @@ void loadCharacterSprites(
     const char **walk_shoot_left, int walk_shoot_frames_left,
     const char **jump_shoot_left, int jump_shoot_frames_left,
     const char **crouch_shoot_left, int crouch_shoot_frames_left,
-    const char **idle_shoot_left, int idle_shoot_frames_left)
+    const char **idle_shoot_left, int idle_shoot_frames_left,
+    const char **walk_shoot_up_left, int walk_shoot_up_frames_left,
+    const char **jump_shoot_up_left, int jump_shoot_up_frames_left,
+    const char **idle_shoot_up_left, int idle_shoot_up_frames_left)
 {
     load_frames(&ch->walk_frames_arr_right, walk_right, walk_frames);
     load_frames(&ch->jump_frames_arr_right, jump_right, jump_frames);
@@ -207,6 +237,9 @@ void loadCharacterSprites(
     load_frames(&ch->jump_shoot_frames_arr_right, jump_shoot_right, jump_shoot_frames);
     load_frames(&ch->crouch_shoot_frames_arr_right, crouch_shoot_right, crouch_shoot_frames);
     load_frames(&ch->idle_shoot_frames_arr_right, idle_shoot_right, idle_shoot_frames);
+    load_frames(&ch->walk_shoot_up_frames_arr_right, walk_shoot_up_right, walk_shoot_up_frames);
+    load_frames(&ch->jump_shoot_up_frames_arr_right, jump_shoot_up_right, jump_shoot_up_frames);
+    load_frames(&ch->idle_shoot_up_frames_arr_right, idle_shoot_up_right, idle_shoot_up_frames);
 
     load_frames(&ch->walk_frames_arr_left, walk_left, walk_frames_left);
     load_frames(&ch->jump_frames_arr_left, jump_left, jump_frames_left);
@@ -216,6 +249,9 @@ void loadCharacterSprites(
     load_frames(&ch->jump_shoot_frames_arr_left, jump_shoot_left, jump_shoot_frames_left);
     load_frames(&ch->crouch_shoot_frames_arr_left, crouch_shoot_left, crouch_shoot_frames_left);
     load_frames(&ch->idle_shoot_frames_arr_left, idle_shoot_left, idle_shoot_frames_left);
+    load_frames(&ch->walk_shoot_up_frames_arr_left, walk_shoot_up_left, walk_shoot_up_frames_left);
+    load_frames(&ch->jump_shoot_up_frames_arr_left, jump_shoot_up_left, jump_shoot_up_frames_left);
+    load_frames(&ch->idle_shoot_up_frames_arr_left, idle_shoot_up_left, idle_shoot_up_frames_left);
 
     ch->walk_frames_right = walk_frames;
     ch->jump_frames_right = jump_frames;
@@ -225,6 +261,9 @@ void loadCharacterSprites(
     ch->jump_shoot_frames_right = jump_shoot_frames;
     ch->crouch_shoot_frames_right = crouch_shoot_frames;
     ch->idle_shoot_frames_right = idle_shoot_frames;
+    ch->walk_shoot_up_frames_right = walk_shoot_up_frames;
+    ch->jump_shoot_up_frames_right = jump_shoot_up_frames;
+    ch->idle_shoot_up_frames_right = idle_shoot_up_frames;
 
     ch->walk_frames_left = walk_frames_left;
     ch->jump_frames_left = jump_frames_left;
@@ -234,6 +273,9 @@ void loadCharacterSprites(
     ch->jump_shoot_frames_left = jump_shoot_frames_left;
     ch->crouch_shoot_frames_left = crouch_shoot_frames_left;
     ch->idle_shoot_frames_left = idle_shoot_frames_left;
+    ch->walk_shoot_up_frames_left = walk_shoot_up_frames_left;
+    ch->jump_shoot_up_frames_left = jump_shoot_up_frames_left;
+    ch->idle_shoot_up_frames_left = idle_shoot_up_frames_left;
 }
 
 void destroyCharacterSprites(Character *ch)
@@ -246,6 +288,9 @@ void destroyCharacterSprites(Character *ch)
     destroy_frames(ch->jump_shoot_frames_arr_right, ch->jump_shoot_frames_right);
     destroy_frames(ch->crouch_shoot_frames_arr_right, ch->crouch_shoot_frames_right);
     destroy_frames(ch->idle_shoot_frames_arr_right, ch->idle_shoot_frames_right);
+    destroy_frames(ch->walk_shoot_up_frames_arr_right, ch->walk_shoot_up_frames_right);
+    destroy_frames(ch->jump_shoot_up_frames_arr_right, ch->jump_shoot_up_frames_right);
+    destroy_frames(ch->idle_shoot_up_frames_arr_right, ch->idle_shoot_up_frames_right);
 
     destroy_frames(ch->walk_frames_arr_left, ch->walk_frames_left);
     destroy_frames(ch->jump_frames_arr_left, ch->jump_frames_left);
@@ -255,6 +300,9 @@ void destroyCharacterSprites(Character *ch)
     destroy_frames(ch->jump_shoot_frames_arr_left, ch->jump_shoot_frames_left);
     destroy_frames(ch->crouch_shoot_frames_arr_left, ch->crouch_shoot_frames_left);
     destroy_frames(ch->idle_shoot_frames_arr_left, ch->idle_shoot_frames_left);
+    destroy_frames(ch->walk_shoot_up_frames_arr_left, ch->walk_shoot_up_frames_left);
+    destroy_frames(ch->jump_shoot_up_frames_arr_left, ch->jump_shoot_up_frames_left);
+    destroy_frames(ch->idle_shoot_up_frames_arr_left, ch->idle_shoot_up_frames_left);
 }
 
 // Função de desenho considerando movimento + tiro e direção
@@ -264,8 +312,28 @@ void drawCharacter(Character *ch, ALLEGRO_BITMAP *default_sprite, bool flip)
     int is_left = (ch->side == 1);
     int frames_count = 1;
     ALLEGRO_BITMAP **frames_arr = NULL;
+    extern int shooting_up;
 
-    if (ch->shooting)
+    if (shooting_up)
+    {
+        switch (ch->state)
+        {
+        case CHAR_STATE_WALK:
+            frames_arr = is_left ? ch->walk_shoot_up_frames_arr_left : ch->walk_shoot_up_frames_arr_right;
+            frames_count = is_left ? ch->walk_shoot_up_frames_left : ch->walk_shoot_up_frames_right;
+            break;
+        case CHAR_STATE_JUMP:
+            frames_arr = is_left ? ch->jump_shoot_up_frames_arr_left : ch->jump_shoot_up_frames_arr_right;
+            frames_count = is_left ? ch->jump_shoot_up_frames_left : ch->jump_shoot_up_frames_right;
+            break;
+        case CHAR_STATE_IDLE:
+        default:
+            frames_arr = is_left ? ch->idle_shoot_up_frames_arr_left : ch->idle_shoot_up_frames_arr_right;
+            frames_count = is_left ? ch->idle_shoot_up_frames_left : ch->idle_shoot_up_frames_right;
+            break;
+        }
+    }
+    else if (ch->shooting)
     {
         switch (ch->state)
         {
@@ -318,11 +386,14 @@ void drawCharacter(Character *ch, ALLEGRO_BITMAP *default_sprite, bool flip)
     if (frames_arr && frames_arr[safe_frame] && al_get_bitmap_width(frames_arr[safe_frame]) > 0)
     {
         sprite = frames_arr[safe_frame];
-        al_draw_bitmap(sprite, ch->x, ch->y - ch->height, 0);
+        int sprite_height = al_get_bitmap_height(sprite);
+        // Garante que os pés fiquem no chão, mesmo se a altura da sprite variar
+        al_draw_bitmap(sprite, ch->x, ch->y - sprite_height, 0);
     }
     else if (default_sprite)
     {
-        al_draw_bitmap(default_sprite, ch->x, ch->y - ch->height, 0);
+        int sprite_height = al_get_bitmap_height(default_sprite);
+        al_draw_bitmap(default_sprite, ch->x, ch->y - sprite_height, 0);
     }
 
     drawBullets(ch->gun->shots);
@@ -348,11 +419,28 @@ void updateCharacterState(Character *ch)
     else
         ch->state = CHAR_STATE_IDLE;
 
-    ch->shooting = ch->control->fire;
+    extern int shooting_up;
+    ch->shooting = (ch->control->fire || shooting_up); // Considere atirando se fire ou shooting_up
 
     int is_left = (ch->side == 1);
     int frames = 1;
-    if (ch->shooting)
+    if (shooting_up)
+    {
+        switch (ch->state)
+        {
+        case CHAR_STATE_WALK:
+            frames = is_left ? ch->walk_shoot_up_frames_left : ch->walk_shoot_up_frames_right;
+            break;
+        case CHAR_STATE_JUMP:
+            frames = is_left ? ch->jump_shoot_up_frames_left : ch->jump_shoot_up_frames_right;
+            break;
+        case CHAR_STATE_IDLE:
+        default:
+            frames = is_left ? ch->idle_shoot_up_frames_left : ch->idle_shoot_up_frames_right;
+            break;
+        }
+    }
+    else if (ch->shooting)
     {
         switch (ch->state)
         {
@@ -427,8 +515,6 @@ void positionUpdate(Character *player, int ground_y, int ground_height)
     const int jump_speed = 10;
     const int gravity = 9;
 
-    int target_ground_y = ground_y;
-
     if (player->jumping)
     {
         player->y -= jump_speed;
@@ -438,11 +524,16 @@ void positionUpdate(Character *player, int ground_y, int ground_height)
             player->jumping = 0;
         }
     }
-    else if (player->y < target_ground_y)
+    else if (player->y < ground_y)
     {
         player->y += gravity;
-        if (player->y > target_ground_y)
-            player->y = target_ground_y;
+        if (player->y > ground_y)
+            player->y = ground_y;
+    }
+    else
+    {
+        // Garante que, ao não pular nem cair, os pés fiquem no chão
+        player->y = ground_y;
     }
 
     // Ajuste de altura ao agachar/levantar (mantendo os pés no chão)

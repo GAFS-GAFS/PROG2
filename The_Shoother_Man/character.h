@@ -53,6 +53,16 @@ typedef struct Character
     ALLEGRO_BITMAP **crouch_shoot_frames_arr_left;
     ALLEGRO_BITMAP **idle_shoot_frames_arr_left;
 
+    // Sprites de andar atirando para cima (direita/esquerda)
+    ALLEGRO_BITMAP **walk_shoot_up_frames_arr_right;
+    ALLEGRO_BITMAP **walk_shoot_up_frames_arr_left;
+    // Sprites de pular atirando para cima (direita/esquerda)
+    ALLEGRO_BITMAP **jump_shoot_up_frames_arr_right;
+    ALLEGRO_BITMAP **jump_shoot_up_frames_arr_left;
+    // Sprites de parado atirando para cima (direita/esquerda)
+    ALLEGRO_BITMAP **idle_shoot_up_frames_arr_right;
+    ALLEGRO_BITMAP **idle_shoot_up_frames_arr_left;
+
     // Número de frames por animação (direita)
     int walk_frames_right;
     int jump_frames_right;
@@ -73,6 +83,14 @@ typedef struct Character
     int crouch_shoot_frames_left;
     int idle_shoot_frames_left;
 
+    // Número de frames dessas animações
+    int walk_shoot_up_frames_right;
+    int walk_shoot_up_frames_left;
+    int jump_shoot_up_frames_right;
+    int jump_shoot_up_frames_left;
+    int idle_shoot_up_frames_right;
+    int idle_shoot_up_frames_left;
+
     CharacterState state;
     int shooting;      // 1 se está atirando, 0 caso contrário
     int frame;         // frame atual da animação
@@ -87,6 +105,7 @@ Character *createCharacter(unsigned char side, unsigned char face, unsigned shor
 void moveCharacter(Character *element, char steps, unsigned char trajectory, unsigned short max_x, unsigned short max_y);
 
 void shotCharacter(Character *element);
+void shotCharacterUp(Character *element);
 
 void destroyCharacter(Character *element);
 
@@ -112,6 +131,9 @@ void loadCharacterSprites(
     const char **jump_shoot_right, int jump_shoot_frames,
     const char **crouch_shoot_right, int crouch_shoot_frames,
     const char **idle_shoot_right, int idle_shoot_frames,
+    const char **walk_shoot_up_right, int walk_shoot_up_frames,
+    const char **jump_shoot_up_right, int jump_shoot_up_frames,
+    const char **idle_shoot_up_right, int idle_shoot_up_frames,
     const char **walk_left, int walk_frames_left,
     const char **jump_left, int jump_frames_left,
     const char **crouch_left, int crouch_frames_left,
@@ -119,7 +141,10 @@ void loadCharacterSprites(
     const char **walk_shoot_left, int walk_shoot_frames_left,
     const char **jump_shoot_left, int jump_shoot_frames_left,
     const char **crouch_shoot_left, int crouch_shoot_frames_left,
-    const char **idle_shoot_left, int idle_shoot_frames_left);
+    const char **idle_shoot_left, int idle_shoot_frames_left,
+    const char **walk_shoot_up_left, int walk_shoot_up_frames_left,
+    const char **jump_shoot_up_left, int jump_shoot_up_frames_left,
+    const char **idle_shoot_up_left, int idle_shoot_up_frames_left);
 void destroyCharacterSprites(Character *ch);
 
 void draw_life_bar(Character *player);

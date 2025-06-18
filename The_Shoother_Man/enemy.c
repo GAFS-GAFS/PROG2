@@ -28,6 +28,11 @@ Enemy *createEnemy(int x, int y, int width, int height, int hp)
     enemy->direction = 1; // Direção inicial padrão (esquerda)
     enemy->gun = createPistol();
     enemy->sprite = NULL; // Não usa sprite
+    enemy->frame = 0;
+    // Inicializa patrulha: começa andando para esquerda por 90 frames
+    enemy->patrol_timer = 90;
+    enemy->patrol_dir_timer = 0;
+    enemy->state = 1; // Começa andando
     return enemy;
 }
 
@@ -153,88 +158,137 @@ void updateEnemy(Enemy *enemy, Character *player, int ground_y)
     if (enemy->fire_cooldown > 0)
         enemy->fire_cooldown--;
 
-    // --- Lógica de movimentação: anda para esquerda e direita, para para atirar, não pula mais ---
+    // --- Lógica de ações aleatórias: andar esquerda, andar direita, parar ---
     static int move_timer = 0;
     static int move_state = 0; // 0 = parado, 1 = andando esquerda, 2 = andando direita
 
-    // Decide se vai andar ou parar
-    if (move_timer <= 0)
-    {
-        int r = rand() % 100;
-        if (r < 40)
-            move_state = 1; // 40% chance de andar para esquerda
-        else if (r < 80)
-            move_state = 2; // 40% chance de andar para direita
-        else
-            move_state = 0; // 20% parado
-        move_timer = 60;
-    }
-    else
-    {
-        move_timer--;
-    }
-
-    // Se for atirar, para de andar
     int will_shoot = 0;
-    if (enemy->fire_cooldown == 0)
+    if (enemy->fire_cooldown == 0 && player)
     {
-        // Calcula direção do tiro em relação ao personagem
         int dx = (player->x + player->width / 2) - (enemy->x + enemy->width / 2);
-        // int dy = (player->y - player->height / 2) - (enemy->y - enemy->height / 2); // Removido unused
-        //  Só atira se o player estiver razoavelmente próximo na horizontal
         if (abs(dx) < 400)
         {
+            // Garante que o inimigo vire para o lado do player antes de atirar
+            if (dx < 0)
+                enemy->direction = 1; // esquerda
+            else
+                enemy->direction = 0; // direita
             enemyShoot(enemy, player);
             will_shoot = 1;
         }
     }
 
-    // Se for atirar, fica parado
     if (will_shoot)
     {
-        move_state = 0;
+        enemy->state = 2; // idle_shoot (parado atirando)
+        move_timer = 0;   // reseta timer de movimento
     }
-
-    // Anda para esquerda ou direita
-    if (move_state == 1)
+    else
     {
-        if (enemy->x > 0)
+        if (move_timer <= 0)
         {
-            moveEnemy(enemy, -2, 0, X_SCREEN, ground_y);
-            enemy->direction = 1;
+            int r = rand() % 100;
+            if (r < 40)
+                move_state = 1; // 40% chance de andar para esquerda
+            else if (r < 80)
+                move_state = 2; // 40% chance de andar para direita
+            else
+                move_state = 0;            // 20% parado
+            move_timer = 60 + rand() % 60; // tempo aleatório entre 60 e 120 frames
         }
-    }
-    else if (move_state == 2)
-    {
-        if (enemy->x + enemy->width < X_SCREEN)
+        else
         {
-            moveEnemy(enemy, 2, 0, X_SCREEN, ground_y);
+            move_timer--;
+        }
+
+        if (move_state == 1)
+        {
+            enemy->state = 1; // walk
+            enemy->direction = 1;
+            if (enemy->x > 0)
+                moveEnemy(enemy, -2, 0, X_SCREEN, ground_y);
+        }
+        else if (move_state == 2)
+        {
+            enemy->state = 1; // walk
             enemy->direction = 0;
+            if (enemy->x + enemy->width < X_SCREEN)
+                moveEnemy(enemy, 2, 0, X_SCREEN, ground_y);
+        }
+        else
+        {
+            enemy->state = 0; // idle
         }
     }
     // Atualiza balas do inimigo
     bulletUpdateEnemy(enemy);
 }
 
+void updateEnemyStateAndFrame(Enemy *enemy)
+{
+    static int anim_counter = 0;
+    const int anim_speed = 6;
+    int frames = 1;
+    // Se for atirar, usa sprite de idle_shoot
+    if (enemy->state == 2) // 2 = idle_shoot
+    {
+        if (enemy->direction == 1 && enemy->idle_shoot_frames_arr_left && enemy->idle_shoot_frames_left > 0)
+            frames = enemy->idle_shoot_frames_left;
+        else if (enemy->direction == 0 && enemy->idle_shoot_frames_arr_right && enemy->idle_shoot_frames_right > 0)
+            frames = enemy->idle_shoot_frames_right;
+        else
+            frames = 1;
+    }
+    else if (enemy->state == 1) // walk
+    {
+        frames = (enemy->direction == 1) ? enemy->walk_frames_left : enemy->walk_frames_right;
+    }
+    else // idle
+    {
+        frames = (enemy->direction == 1) ? enemy->idle_frames_left : enemy->idle_frames_right;
+    }
+    // Avança frame se houver mais de 1 frame
+    if (frames > 1)
+    {
+        anim_counter++;
+        if (anim_counter >= anim_speed)
+        {
+            enemy->frame = (enemy->frame + 1) % frames;
+            anim_counter = 0;
+        }
+    }
+    else
+    {
+        enemy->frame = 0;
+        anim_counter = 0;
+    }
+}
+
 void drawEnemy(Enemy *enemy)
 {
     if (!enemy)
         return;
-    // Seleciona animação e frame conforme estado e direção
     ALLEGRO_BITMAP *sprite = NULL;
     int frame = enemy->frame;
-    if (enemy->direction == 1)
-    {                                                                                        // Esquerda
-        if (enemy->state == 1 && enemy->walk_frames_arr_left && enemy->walk_frames_left > 0) // walk
+    if (enemy->state == 2) // idle_shoot (parado atirando)
+    {
+        if (enemy->direction == 1 && enemy->idle_shoot_frames_arr_left && enemy->idle_shoot_frames_left > 0 && enemy->idle_shoot_frames_arr_left[frame % enemy->idle_shoot_frames_left])
+            sprite = enemy->idle_shoot_frames_arr_left[frame % enemy->idle_shoot_frames_left];
+        else if (enemy->direction == 0 && enemy->idle_shoot_frames_arr_right && enemy->idle_shoot_frames_right > 0 && enemy->idle_shoot_frames_arr_right[frame % enemy->idle_shoot_frames_right])
+            sprite = enemy->idle_shoot_frames_arr_right[frame % enemy->idle_shoot_frames_right];
+    }
+    else if (enemy->direction == 1)
+    {
+        if (enemy->state == 1 && enemy->walk_frames_arr_left && enemy->walk_frames_left > 0 && enemy->walk_frames_arr_left[frame % enemy->walk_frames_left])
             sprite = enemy->walk_frames_arr_left[frame % enemy->walk_frames_left];
-        else if (enemy->idle_frames_arr_left && enemy->idle_frames_left > 0) // idle
+        else if (enemy->idle_frames_arr_left && enemy->idle_frames_left > 0 && enemy->idle_frames_arr_left[frame % enemy->idle_frames_left])
             sprite = enemy->idle_frames_arr_left[frame % enemy->idle_frames_left];
     }
     else
-    { // Direita
-        if (enemy->state == 1 && enemy->walk_frames_arr_right && enemy->walk_frames_right > 0)
+    {
+        if (enemy->state == 1 && enemy->walk_frames_arr_right && enemy->walk_frames_right > 0 && enemy->walk_frames_arr_right[frame % enemy->walk_frames_right])
             sprite = enemy->walk_frames_arr_right[frame % enemy->walk_frames_right];
-        else if (enemy->idle_frames_arr_right && enemy->idle_frames_right > 0)
+        else if (enemy->idle_frames_arr_right && enemy->idle_frames_right > 0 && enemy->idle_frames_arr_right[frame % enemy->idle_frames_right])
             sprite = enemy->idle_frames_arr_right[frame % enemy->idle_frames_right];
     }
     if (sprite)
