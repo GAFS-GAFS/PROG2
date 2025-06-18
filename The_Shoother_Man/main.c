@@ -187,6 +187,9 @@ int main()
     bool running = true;
     bool redraw = true;
 
+    // --- Adicione variáveis para timer de início ---
+    int start_timer = 90; // 3 segundos a 30 FPS
+
     while (running)
     {
         al_wait_for_event(queue, &event);
@@ -248,100 +251,120 @@ int main()
         }
         else if (event.type == ALLEGRO_EVENT_TIMER)
         {
-            if (player->control->right && !player->crouching)
+            // Timer de início: só decrementa e não faz nada até acabar
+            if (start_timer > 0)
             {
-                moveCharacter(player, caracther_STEP, 0, X_SCREEN, Y_SCREEN);
-                update_background(2.0);
+                start_timer--;
+                redraw = true;
             }
-            if (player->control->left && !player->crouching)
+            else
             {
-                moveCharacter(player, caracther_STEP, 1, X_SCREEN, Y_SCREEN);
-            }
-            // Disparo automático enquanto segura espaço ou V
-            if ((player->control->fire || shooting_up))
-            {
-                if (player->fire_cooldown <= 0)
+                if (player->control->right && !player->crouching)
                 {
-                    if (shooting_up)
+                    moveCharacter(player, caracther_STEP, 0, X_SCREEN, Y_SCREEN);
+                    update_background(2.0);
+                }
+                if (player->control->left && !player->crouching)
+                {
+                    moveCharacter(player, caracther_STEP, 1, X_SCREEN, Y_SCREEN);
+                }
+                // Disparo automático enquanto segura espaço ou V
+                if ((player->control->fire || shooting_up))
+                {
+                    if (player->fire_cooldown <= 0)
                     {
-                        shotCharacterUp(player);
-                        // printf("Atirando para cima!\n");
+                        if (shooting_up)
+                        {
+                            shotCharacterUp(player);
+                        }
+                        else
+                        {
+                            shotCharacter(player);
+                        }
+                        player->fire_cooldown = 7;
+                    }
+                }
+                if (player->fire_cooldown > 0)
+                    player->fire_cooldown--;
+                positionUpdate(player, ground_y, ground_height);
+                bulletUpdate(player);
+                updateCharacterState(player);
+                if (enemy)
+                {
+                    updateEnemy(enemy, player, ground_y);
+                    updateEnemyStateAndFrame(enemy);
+                    checkPlayerBulletHitsEnemy(player, enemy);
+                    checkEnemyBulletHitsPlayer(enemy, player);
+                    if (checkEnemyPlayerCollision(enemy, player))
+                    {
+                        updateCharacterHp(player, -2); // Dano por contato
+                    }
+                    if (enemy->hp <= 0)
+                    {
+                        destroyEnemySprites(enemy);
+                        destroyEnemy(enemy);
+                        enemy = NULL;
+                    }
+                }
+                // Spawna novo inimigo imediatamente se o anterior morreu e não atingiu o limite
+                if (!enemy && enemies_spawned < max_enemies)
+                {
+                    int min_x = X_SCREEN / 2;
+                    int max_x = X_SCREEN - 32;
+                    int spawn_x = min_x + rand() % (max_x - min_x + 1);
+                    enemy = createEnemy(spawn_x, ground_y, 32, 48, 50);
+                    loadEnemySprites(enemy,
+                                     enemy_walk_imgs_right, 8,
+                                     enemy_idle_imgs_right, 1,
+                                     NULL, 0, // walk_shoot_right
+                                     enemy_idle_shoot_imgs_right, 2,
+                                     enemy_walk_imgs_left, 8,
+                                     enemy_idle_imgs_left, 1,
+                                     NULL, 0, // walk_shoot_left
+                                     enemy_idle_shoot_imgs_left, 1);
+                    printf("personagem nascido\n");
+                    enemies_spawned++;
+                }
+                if (player->hp <= 0)
+                {
+                    ALLEGRO_BITMAP *gameover_img = al_load_bitmap("./imagens/tsmGO.png");
+                    al_clear_to_color(al_map_rgb(255, 255, 255));
+                    if (gameover_img)
+                    {
+                        int img_w = al_get_bitmap_width(gameover_img);
+                        int img_h = al_get_bitmap_height(gameover_img);
+                        al_draw_bitmap(gameover_img, (X_SCREEN - img_w) / 2, (Y_SCREEN - img_h) / 2, 0);
+                        al_destroy_bitmap(gameover_img);
                     }
                     else
                     {
-                        shotCharacter(player);
-                        // printf("Atirando normal!\n");
+                        al_draw_text(font, al_map_rgb(255, 0, 0), X_SCREEN / 2, Y_SCREEN / 2 - 20, ALLEGRO_ALIGN_CENTER, "GAME OVER");
                     }
-                    player->fire_cooldown = 7;
+                    al_flip_display();
+                    al_rest(2.0);
+                    running = false;
+                    continue;
                 }
+                redraw = true;
             }
-            if (player->fire_cooldown > 0)
-                player->fire_cooldown--;
-            positionUpdate(player, ground_y, ground_height);
-            bulletUpdate(player);
-            updateCharacterState(player);
-            if (enemy)
-            {
-                updateEnemy(enemy, player, ground_y);
-                updateEnemyStateAndFrame(enemy);
-                checkPlayerBulletHitsEnemy(player, enemy);
-                checkEnemyBulletHitsPlayer(enemy, player);
-                if (checkEnemyPlayerCollision(enemy, player))
-                {
-                    updateCharacterHp(player, -2); // Dano por contato
-                }
-                if (enemy->hp <= 0)
-                {
-                    destroyEnemySprites(enemy);
-                    destroyEnemy(enemy);
-                    enemy = NULL;
-                }
-            }
-            // Spawna novo inimigo se o anterior morreu e não atingiu o limite
-            if (!enemy && enemies_spawned < max_enemies)
-            {
-                int min_x = X_SCREEN / 2;
-                int max_x = X_SCREEN - 32;
-                int spawn_x = min_x + rand() % (max_x - min_x + 1);
-                enemy = createEnemy(spawn_x, ground_y, 32, 48, 50);
-                loadEnemySprites(enemy,
-                                 enemy_walk_imgs_right, 8,
-                                 enemy_idle_imgs_right, 1,
-                                 NULL, 0, // walk_shoot_right
-                                 enemy_idle_shoot_imgs_right, 2,
-                                 enemy_walk_imgs_left, 8,
-                                 enemy_idle_imgs_left, 1,
-                                 NULL, 0, // walk_shoot_left
-                                 enemy_idle_shoot_imgs_left, 1);
-                printf("personagem nascido\n");
-                enemies_spawned++;
-            }
-            if (player->hp <= 0)
-            {
-                ALLEGRO_BITMAP *gameover_img = al_load_bitmap("./imagens/tsmGO.png");
-                al_clear_to_color(al_map_rgb(255, 255, 255));
-                if (gameover_img)
-                {
-                    int img_w = al_get_bitmap_width(gameover_img);
-                    int img_h = al_get_bitmap_height(gameover_img);
-                    al_draw_bitmap(gameover_img, (X_SCREEN - img_w) / 2, (Y_SCREEN - img_h) / 2, 0);
-                    al_destroy_bitmap(gameover_img);
-                }
-                else
-                {
-                    al_draw_text(font, al_map_rgb(255, 0, 0), X_SCREEN / 2, Y_SCREEN / 2 - 20, ALLEGRO_ALIGN_CENTER, "GAME OVER");
-                }
-                al_flip_display();
-                al_rest(2.0);
-                running = false;
-                continue;
-            }
-            redraw = true;
         }
         if (redraw && al_is_event_queue_empty(queue))
         {
             al_clear_to_color(al_map_rgb(0, 0, 0));
             draw_background();
+
+            // --- Escreve mensagem de timer de início ---
+            if (start_timer > 0)
+            {
+                char msg[64];
+                int seconds = (start_timer + 29) / 30; // arredonda para cima
+                snprintf(msg, sizeof(msg), "Prepare-se! Iniciando em %d...", seconds);
+                al_draw_text(font, al_map_rgb(255, 255, 0), X_SCREEN / 2, Y_SCREEN / 2, ALLEGRO_ALIGN_CENTER, msg);
+                al_flip_display();
+                redraw = false;
+                continue;
+            }
+
             drawCharacter(player, NULL, false);
             if (enemy)
                 drawEnemy(enemy);  // Desenha o inimigo
