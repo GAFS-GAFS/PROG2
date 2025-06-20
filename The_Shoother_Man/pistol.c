@@ -40,13 +40,14 @@ bullet *firePistol(unsigned short x, unsigned short y, unsigned char trajectory,
 
 void destroyPistol(pistol *element)
 {
+    if (!element)
+        return;
     bullet *sentinel;
-
     for (bullet *current = element->shots; current != NULL; current = sentinel)
     {
         sentinel = (bullet *)current->next;
         destroyBullet(current);
     }
-
+    element->shots = NULL;
     free(element);
 }

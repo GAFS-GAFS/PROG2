@@ -167,12 +167,19 @@ void destroyCharacter(Character *element)
         return;
 
     if (element->control)
+    {
         destroyJoystick(element->control);
+        element->control = NULL;
+    }
 
     if (element->gun)
+    {
         destroyPistol(element->gun);
+        element->gun = NULL;
+    }
 
     free(element);
+    // Do not set element = NULL here, as it's a local pointer
 }
 
 void load_frames(ALLEGRO_BITMAP ***arr, const char **src, int count)
@@ -280,6 +287,8 @@ void loadCharacterSprites(
 
 void destroyCharacterSprites(Character *ch)
 {
+    if (!ch)
+        return;
     destroy_frames(ch->walk_frames_arr_right, ch->walk_frames_right);
     destroy_frames(ch->jump_frames_arr_right, ch->jump_frames_right);
     destroy_frames(ch->crouch_frames_arr_right, ch->crouch_frames_right);
@@ -291,7 +300,6 @@ void destroyCharacterSprites(Character *ch)
     destroy_frames(ch->walk_shoot_up_frames_arr_right, ch->walk_shoot_up_frames_right);
     destroy_frames(ch->jump_shoot_up_frames_arr_right, ch->jump_shoot_up_frames_right);
     destroy_frames(ch->idle_shoot_up_frames_arr_right, ch->idle_shoot_up_frames_right);
-
     destroy_frames(ch->walk_frames_arr_left, ch->walk_frames_left);
     destroy_frames(ch->jump_frames_arr_left, ch->jump_frames_left);
     destroy_frames(ch->crouch_frames_arr_left, ch->crouch_frames_left);
@@ -512,8 +520,8 @@ void positionUpdate(Character *player, int ground_y, int ground_height)
     const int normal_height = 48;
     const int crouch_height = 28;
     const int jump_height = 120;
-    const int jump_speed = 10;
-    const int gravity = 9;
+    const int jump_speed = 10; // Use 10 for smoother jump, not 12
+    const int gravity = 12;
 
     if (player->jumping)
     {
@@ -563,6 +571,9 @@ void bulletUpdate(Character *player)
 
     while (curr)
     {
+        // Salve o próximo antes de qualquer alteração
+        bullet *next = curr->next;
+
         // Atualiza posição da bala conforme a trajetória
         switch (curr->trajectory)
         {
@@ -583,19 +594,17 @@ void bulletUpdate(Character *player)
         // Remove balas fora da tela
         if (curr->x < 0 || curr->x > X_SCREEN || curr->y < 0 || curr->y > Y_SCREEN)
         {
-            bullet *to_remove = curr;
             if (prev)
-                prev->next = curr->next;
+                prev->next = next;
             else
-                player->gun->shots = curr->next;
-            curr = curr->next;
-            free(to_remove);
+                player->gun->shots = next;
+            free(curr);
+            curr = next;
+            // Não avance prev!
+            continue;
         }
-        else
-        {
-            prev = curr;
-            curr = curr->next;
-        }
+        prev = curr;
+        curr = next;
     }
 }
 

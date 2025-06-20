@@ -3,6 +3,7 @@
 #include "character.h"
 #include "bullet.h"
 #include "enemy.h"
+#include "boss.h"
 
 #define X_SCREEN 800
 #define Y_SCREEN 600
@@ -35,6 +36,7 @@ int main()
 
     load_bullet_sprite("./imagens/bullet.png");
     load_lbullet_sprite("./imagens/Lbullet.png");
+    load_boss_bullet_sprite("./imagens/bossBullet.png"); // <-- Adicione esta linha
 
     al_register_event_source(queue, al_get_keyboard_event_source());
     al_register_event_source(queue, al_get_display_event_source(display));
@@ -180,14 +182,19 @@ int main()
                      NULL, 0, // walk_shoot_left
                      enemy_idle_shoot_imgs_left, 1);
 
+    Boss *boss = NULL;
+
+    // --- Boss sprite arrays ---
+    const char *boss_walk_imgs_right[] = {"./imagens/tank1.png"};
+    const char *boss_idle_imgs_right[] = {"./imagens/tank1.png"};
+    const char *boss_shoot_imgs_right[] = {"./imagens/tank1.png"};
+
     al_start_timer(timer);
 
     ALLEGRO_EVENT event;
 
     bool running = true;
     bool redraw = true;
-
-    // --- Adicione variáveis para timer de início ---
     int start_timer = 90; // 3 segundos a 30 FPS
 
     while (running)
@@ -251,7 +258,6 @@ int main()
         }
         else if (event.type == ALLEGRO_EVENT_TIMER)
         {
-            // Timer de início: só decrementa e não faz nada até acabar
             if (start_timer > 0)
             {
                 start_timer--;
@@ -297,7 +303,8 @@ int main()
                     checkEnemyBulletHitsPlayer(enemy, player);
                     if (checkEnemyPlayerCollision(enemy, player))
                     {
-                        updateCharacterHp(player, -2); // Dano por contato
+                        updateCharacterHp(player, -2); // Dano por contato no player
+                        enemy->hp -= 2;                // Dano por contato no inimigo
                     }
                     if (enemy->hp <= 0)
                     {
@@ -325,6 +332,60 @@ int main()
                     printf("personagem nascido\n");
                     enemies_spawned++;
                 }
+
+                // --- Carrega o boss imediatamente após matar todos os inimigos comuns ---
+                if (!enemy && enemies_spawned >= max_enemies && !boss)
+                {
+                    int boss_width = 64;
+                    int boss_x = X_SCREEN - boss_width - 32;
+                    int boss_y = ground_y;
+                    boss = createBoss(boss_x, boss_y);
+                    boss->direction = 1; // 1 = esquerda
+                    boss->state = 2;     // 2 = shoot
+                    // Só chama loadBossSprites se o número de frames for maior que zero
+                    if (1 > 0)
+                    {
+                        loadBossSprites(boss,
+                                        boss_walk_imgs_right, 1,
+                                        boss_idle_imgs_right, 1,
+                                        boss_shoot_imgs_right, 1);
+                    }
+                    redraw = true;
+                }
+                if (boss)
+                {
+                    updateBoss(boss, player, ground_y);
+                    checkPlayerBulletHitsBoss(player, boss);
+                    checkBossBulletHitsPlayer(boss, player);
+                    if (checkBossPlayerCollision(boss, player))
+                    {
+                        updateCharacterHp(player, -5); // Dano por contato
+                        boss->hp -= 2;                 // Dano ao boss
+                    }
+                    if (boss->hp <= 0)
+                    {
+                        // Não destrua o boss, apenas mostre a tela de vitória
+                        ALLEGRO_BITMAP *win_img = al_load_bitmap("./imagens/tsmYW.png");
+                        al_clear_to_color(al_map_rgb(255, 255, 255));
+                        if (win_img)
+                        {
+                            int img_w = al_get_bitmap_width(win_img);
+                            int img_h = al_get_bitmap_height(win_img);
+                            al_draw_bitmap(win_img, (X_SCREEN - img_w) / 2, (Y_SCREEN - img_h) / 2, 0);
+                            al_destroy_bitmap(win_img);
+                        }
+                        else
+                        {
+                            al_draw_text(font, al_map_rgb(0, 200, 0), X_SCREEN / 2, Y_SCREEN / 2 - 20, ALLEGRO_ALIGN_CENTER, "VOCÊ VENCEU!");
+                        }
+
+                        al_flip_display();
+                        al_rest(2.0);
+                        running = false;
+                        continue;
+                    }
+                }
+
                 if (player->hp <= 0)
                 {
                     ALLEGRO_BITMAP *gameover_img = al_load_bitmap("./imagens/tsmGO.png");
@@ -365,10 +426,16 @@ int main()
                 continue;
             }
 
+            // --- Após matar todos os inimigos, mostra o boss normalmente (sem tela de carregamento) ---
+            if (boss)
+            {
+                drawBoss(boss);
+                drawBossLifeBar(boss);
+            }
             drawCharacter(player, NULL, false);
             if (enemy)
-                drawEnemy(enemy);  // Desenha o inimigo
-            draw_life_bar(player); // Desenha a barra de vida
+                drawEnemy(enemy);
+            draw_life_bar(player);
             al_flip_display();
             redraw = false;
         }
@@ -381,10 +448,18 @@ int main()
     al_destroy_font(font);
     destroyCharacterSprites(player);
     destroy_bullet_sprite();
-    // Libera as sprites do inimigo antes de destruir o Enemy
+    destroy_boss_bullet_sprite();
     if (enemy)
+    {
         destroyEnemySprites(enemy);
-    destroyEnemy(enemy);
-
+        destroyEnemy(enemy);
+        enemy = NULL;
+    }
+    //    if (boss)
+    //    {
+    //        destroyBossSprites(boss);
+    //        destroyBoss(boss);
+    //        boss = NULL;
+    //    }
     return (0);
 }

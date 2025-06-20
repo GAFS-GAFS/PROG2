@@ -331,7 +331,6 @@ void checkPlayerBulletHitsEnemy(Character *player, Enemy *enemy)
                 player->gun->shots = curr->next;
             curr = curr->next;
             free(to_remove);
-            continue;
         }
         prev = curr;
         curr = curr->next;
@@ -405,11 +404,19 @@ void loadEnemySprites(Enemy *enemy,
 void destroyEnemySprites(Enemy *enemy)
 {
     destroy_frames(enemy->walk_frames_arr_right, enemy->walk_frames_right);
+    enemy->walk_frames_arr_right = NULL;
     destroy_frames(enemy->idle_frames_arr_right, enemy->idle_frames_right);
+    enemy->idle_frames_arr_right = NULL;
     destroy_frames(enemy->walk_shoot_frames_arr_right, enemy->walk_shoot_frames_right);
+    enemy->walk_shoot_frames_arr_right = NULL;
     destroy_frames(enemy->idle_shoot_frames_arr_right, enemy->idle_shoot_frames_right);
+    enemy->idle_shoot_frames_arr_right = NULL;
     destroy_frames(enemy->walk_frames_arr_left, enemy->walk_frames_left);
+    enemy->walk_frames_arr_left = NULL;
     destroy_frames(enemy->idle_frames_arr_left, enemy->idle_frames_left);
+    enemy->idle_frames_arr_left = NULL;
     destroy_frames(enemy->walk_shoot_frames_arr_left, enemy->walk_shoot_frames_left);
+    enemy->walk_shoot_frames_arr_left = NULL;
     destroy_frames(enemy->idle_shoot_frames_arr_left, enemy->idle_shoot_frames_left);
+    enemy->idle_shoot_frames_arr_left = NULL;
 }
