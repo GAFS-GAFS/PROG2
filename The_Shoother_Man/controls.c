@@ -13,6 +13,8 @@ void controlsDisplay(ALLEGRO_DISPLAY *display, ALLEGRO_FONT *font, ALLEGRO_EVENT
     al_draw_text(font, al_map_rgb(255, 255, 255), al_get_display_width(display) / 2, al_get_display_height(display) / 2, ALLEGRO_ALIGN_CENTER, "Tecla Seta para Baixo - Agacha");
     al_draw_text(font, al_map_rgb(255, 255, 255), al_get_display_width(display) / 2, al_get_display_height(display) / 2 + 30, ALLEGRO_ALIGN_CENTER, "Tecla Seta para Direita - Direita");
     al_draw_text(font, al_map_rgb(255, 255, 255), al_get_display_width(display) / 2, al_get_display_height(display) / 2 + 60, ALLEGRO_ALIGN_CENTER, "Tecla Espaço - Disparar");
+    al_draw_text(font, al_map_rgb(255, 255, 255), al_get_display_width(display) / 2, al_get_display_height(display) / 2 + 60, ALLEGRO_ALIGN_CENTER, "Tecla V - Disparar na Vertical");
+    al_draw_text(font, al_map_rgb(255, 255, 255), al_get_display_width(display) / 2, al_get_display_height(display) / 2 + 60, ALLEGRO_ALIGN_CENTER, "Tecla P - Pausar o jogo");
 
     al_flip_display(); // Atualiza a tela para mostrar as instruções
 

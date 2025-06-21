@@ -330,7 +330,9 @@ void checkPlayerBulletHitsEnemy(Character *player, Enemy *enemy)
             else
                 player->gun->shots = curr->next;
             curr = curr->next;
+
             free(to_remove);
+            continue;
         }
         prev = curr;
         curr = curr->next;

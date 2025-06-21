@@ -196,6 +196,9 @@ int main()
     bool running = true;
     bool redraw = true;
     int start_timer = 90; // 3 segundos a 30 FPS
+    bool boss_loading = false;
+    int boss_loading_timer = 0;
+    bool paused = false; // <-- Adiciona variável de pausa
 
     while (running)
     {
@@ -232,6 +235,9 @@ int main()
             case ALLEGRO_KEY_V:
                 shooting_up = 1;
                 break;
+            case ALLEGRO_KEY_P:
+                paused = !paused;
+                break;
             }
         }
         else if (event.type == ALLEGRO_EVENT_KEY_UP)
@@ -258,10 +264,37 @@ int main()
         }
         else if (event.type == ALLEGRO_EVENT_TIMER)
         {
+            if (paused)
+            {
+                redraw = true;
+                continue;
+            }
             if (start_timer > 0)
             {
                 start_timer--;
                 redraw = true;
+            }
+            // --- Tela de carregamento do boss ---
+            else if (boss_loading)
+            {
+                boss_loading_timer--;
+                redraw = true;
+                if (boss_loading_timer <= 0)
+                {
+                    // Cria o boss após a tela de carregamento
+                    int boss_width = 64;
+                    int boss_x = X_SCREEN - boss_width - 32;
+                    int boss_y = ground_y;
+                    boss = createBoss(boss_x, boss_y);
+                    boss->direction = 1; // 1 = esquerda
+                    boss->state = 2;     // 2 = shoot
+                    loadBossSprites(boss,
+                                    boss_walk_imgs_right, 1,
+                                    boss_idle_imgs_right, 1,
+                                    boss_shoot_imgs_right, 1);
+                    boss_loading = false;
+                    redraw = true;
+                }
             }
             else
             {
@@ -334,22 +367,10 @@ int main()
                 }
 
                 // --- Carrega o boss imediatamente após matar todos os inimigos comuns ---
-                if (!enemy && enemies_spawned >= max_enemies && !boss)
+                if (!enemy && enemies_spawned >= max_enemies && !boss && !boss_loading)
                 {
-                    int boss_width = 64;
-                    int boss_x = X_SCREEN - boss_width - 32;
-                    int boss_y = ground_y;
-                    boss = createBoss(boss_x, boss_y);
-                    boss->direction = 1; // 1 = esquerda
-                    boss->state = 2;     // 2 = shoot
-                    // Só chama loadBossSprites se o número de frames for maior que zero
-                    if (1 > 0)
-                    {
-                        loadBossSprites(boss,
-                                        boss_walk_imgs_right, 1,
-                                        boss_idle_imgs_right, 1,
-                                        boss_shoot_imgs_right, 1);
-                    }
+                    boss_loading = true;
+                    boss_loading_timer = 30; // 1 segundo a 30 FPS
                     redraw = true;
                 }
                 if (boss)
@@ -413,6 +434,13 @@ int main()
         {
             al_clear_to_color(al_map_rgb(0, 0, 0));
             draw_background();
+            if (paused)
+            {
+                al_draw_text(font, al_map_rgb(255, 255, 0), X_SCREEN / 2, Y_SCREEN / 2, ALLEGRO_ALIGN_CENTER, "PAUSADO");
+                al_flip_display();
+                redraw = false;
+                continue;
+            }
 
             // --- Escreve mensagem de timer de início ---
             if (start_timer > 0)
@@ -421,6 +449,15 @@ int main()
                 int seconds = (start_timer + 29) / 30; // arredonda para cima
                 snprintf(msg, sizeof(msg), "Prepare-se! Iniciando em %d...", seconds);
                 al_draw_text(font, al_map_rgb(255, 255, 0), X_SCREEN / 2, Y_SCREEN / 2, ALLEGRO_ALIGN_CENTER, msg);
+                al_flip_display();
+                redraw = false;
+                continue;
+            }
+
+            // --- Tela de carregamento do boss ---
+            if (boss_loading)
+            {
+                al_draw_text(font, al_map_rgb(255, 0, 0), X_SCREEN / 2, Y_SCREEN / 2, ALLEGRO_ALIGN_CENTER, "O TANQUE ENTROU NO TÚNEL");
                 al_flip_display();
                 redraw = false;
                 continue;

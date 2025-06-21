@@ -518,9 +518,9 @@ void positionUpdate(Character *player, int ground_y, int ground_height)
         return;
 
     const int normal_height = 48;
-    const int crouch_height = 28;
+    const int crouch_height = 38; // <-- aumente aqui (antes era 34)
     const int jump_height = 120;
-    const int jump_speed = 10; // Use 10 for smoother jump, not 12
+    const int jump_speed = 12; // Use 10 for smoother jump, not 12
     const int gravity = 12;
 
     if (player->jumping)

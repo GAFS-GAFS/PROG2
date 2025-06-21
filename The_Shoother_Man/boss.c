@@ -168,20 +168,71 @@ void bossShoot(Boss *boss, Character *player)
 
 void updateBoss(Boss *boss, Character *player, int ground_y)
 {
-    if (!boss)
+    if (!boss || !player)
         return;
     if (boss->fire_cooldown > 0)
         boss->fire_cooldown--;
-    // Boss always faces left and shoots
-    boss->direction = 1; // 1 = esquerda
-    boss->state = 2;     // 2 = shoot
+
+    // Parâmetros de movimentação
+    int safe_distance = 180; // distância mínima do player
+    int boss_speed = BOSS_STEP;
+    int boss_center = boss->x + boss->width / 2;
+    int player_center = player->x + player->width / 2;
+    int dx = player_center - boss_center;
+
+    // Movimentação: anda para o player se estiver longe, para se afastar se estiver muito perto
+    if (abs(dx) > safe_distance)
+    {
+        if (dx > 0)
+        {
+            // Player está à direita, anda para a direita
+            boss->x += boss_speed;
+            boss->direction = 0; // 0 = direita
+        }
+        else
+        {
+            // Player está à esquerda, anda para a esquerda
+            boss->x -= boss_speed;
+            boss->direction = 1; // 1 = esquerda
+        }
+        boss->state = 1; // walk
+    }
+    else if (abs(dx) < safe_distance - 40) // se chegar muito perto, afasta
+    {
+        if (dx > 0)
+        {
+            boss->x -= boss_speed;
+            boss->direction = 1;
+        }
+        else
+        {
+            boss->x += boss_speed;
+            boss->direction = 0;
+        }
+        boss->state = 1; // walk
+    }
+    else
+    {
+        boss->state = 0; // idle
+    }
+
+    // Limita o boss à tela
+    if (boss->x < 0)
+        boss->x = 0;
+    if (boss->x + boss->width > X_SCREEN)
+        boss->x = X_SCREEN - boss->width;
+
+    // Atira sempre que possível na direção do player
+    boss->state = 2; // shoot
     bossShoot(boss, player);
-    // Update hitbox
+
+    // Atualiza hitbox
     boss->hitbox_x = boss->x;
     boss->hitbox_y = boss->y - boss->height;
     boss->hitbox_w = boss->width;
     boss->hitbox_h = boss->height;
-    // Update boss bullets
+
+    // Atualiza balas do boss
     if (boss->gun)
     {
         bullet *prev = NULL;
