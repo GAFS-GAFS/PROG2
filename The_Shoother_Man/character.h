@@ -119,6 +119,7 @@ void bulletUpdate(Character *player);
 void updateCharacterHp(Character *player, int delta_hp);
 
 void updateCharacterState(Character *ch);
+void updatePistolReload(pistol *gun);
 
 // Funções para carregar e liberar arrays de frames individuais (agora para direita e esquerda)
 void loadCharacterSprites(

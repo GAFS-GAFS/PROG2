@@ -133,7 +133,7 @@ void enemyShoot(Enemy *enemy, Character *player)
     int bullet_x = enemy->x + enemy->width / 2;
     int bullet_y = enemy->y - enemy->height / 2;
 
-    bullet *new_bullet = firePistol(bullet_x, bullet_y, trajectory, enemy->gun);
+    bullet *new_bullet = firePistol(bullet_x, bullet_y, trajectory, enemy->gun, 0);
     if (new_bullet)
     {
         new_bullet->next = enemy->gun->shots;

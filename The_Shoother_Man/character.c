@@ -130,8 +130,7 @@ void shotCharacter(Character *element)
 
     if (bullet_x < X_SCREEN && bullet_y < Y_SCREEN)
     {
-        bullet *new_bullet = firePistol(bullet_x, bullet_y, trajectory, element->gun);
-
+        bullet *new_bullet = firePistol(bullet_x, bullet_y, trajectory, element->gun, 1); // 1 = player
         if (new_bullet)
         {
             new_bullet->next = element->gun->shots;
@@ -153,7 +152,7 @@ void shotCharacterUp(Character *element)
     if ((int)bullet_y < 0)
         bullet_y = 0;
 
-    bullet *new_bullet = firePistol(bullet_x, bullet_y, 2, element->gun);
+    bullet *new_bullet = firePistol(bullet_x, bullet_y, 2, element->gun, 1); // 1 = player
     if (new_bullet)
     {
         new_bullet->next = element->gun->shots;
@@ -651,4 +650,19 @@ int checkCharacterCollision(Character *a, Character *b)
             a->hitbox_x + a->hitbox_w > b->hitbox_x &&
             a->hitbox_y < b->hitbox_y + b->hitbox_h &&
             a->hitbox_y + a->hitbox_h > b->hitbox_y);
+}
+
+void updatePistolReload(pistol *gun)
+{
+    if (!gun)
+        return;
+    if (gun->reloading)
+    {
+        gun->reload_timer--;
+        if (gun->reload_timer <= 0)
+        {
+            gun->ammo = gun->max_ammo;
+            gun->reloading = 0;
+        }
+    }
 }

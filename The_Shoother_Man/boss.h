@@ -15,6 +15,7 @@
 #define BOSS_STEP 2
 #define BOSS_WIDTH 97
 #define BOSS_HEIGHT 54
+#define BOSS_BULLET_SPEED 10
 
 typedef struct Boss
 {

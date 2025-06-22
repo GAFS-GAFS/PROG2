@@ -157,12 +157,12 @@ void bossShoot(Boss *boss, Character *player)
         bullet_y = boss->y - 8 - 4;
     }
 
-    bullet *new_bullet = firePistol(bullet_x, bullet_y, trajectory, boss->gun);
+    bullet *new_bullet = firePistol(bullet_x, bullet_y, trajectory, boss->gun, 0);
     if (new_bullet)
     {
         new_bullet->next = boss->gun->shots;
         boss->gun->shots = new_bullet;
-        boss->fire_cooldown = 20; // Boss fires less frequently
+        boss->fire_cooldown = 50; // Boss fires more slowly (aumente para atirar mais devagar)
     }
 }
 
@@ -174,7 +174,7 @@ void updateBoss(Boss *boss, Character *player, int ground_y)
         boss->fire_cooldown--;
 
     // Parâmetros de movimentação
-    int safe_distance = 180; // distância mínima do player
+    int safe_distance = 320; // distância mínima do player (aumentado para manter o boss mais longe)
     int boss_speed = BOSS_STEP;
     int boss_center = boss->x + boss->width / 2;
     int player_center = player->x + player->width / 2;
@@ -243,16 +243,16 @@ void updateBoss(Boss *boss, Character *player, int ground_y)
             switch (curr->trajectory)
             {
             case 0:
-                curr->x += BULLET_MOVE;
+                curr->x += BOSS_BULLET_SPEED;
                 break;
             case 1:
-                curr->x -= BULLET_MOVE;
+                curr->x -= BOSS_BULLET_SPEED;
                 break;
             case 2:
-                curr->y -= BULLET_MOVE;
+                curr->y -= BOSS_BULLET_SPEED;
                 break;
             case 3:
-                curr->y += BULLET_MOVE;
+                curr->y += BOSS_BULLET_SPEED;
                 break;
             }
             if (curr->x < 0 || curr->x > X_SCREEN || curr->y < 0 || curr->y > Y_SCREEN)

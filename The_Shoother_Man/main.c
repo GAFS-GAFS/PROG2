@@ -4,6 +4,7 @@
 #include "bullet.h"
 #include "enemy.h"
 #include "boss.h"
+#include "lightning.h"
 
 #define X_SCREEN 800
 #define Y_SCREEN 600
@@ -37,6 +38,36 @@ int main()
     load_bullet_sprite("./imagens/bullet.png");
     load_lbullet_sprite("./imagens/Lbullet.png");
     load_boss_bullet_sprite("./imagens/bossBullet.png"); // <-- Adicione esta linha
+
+    // Substitua o carregamento da sprite do raio por NULL (usaremos um quadrado azul para o drop)
+    ALLEGRO_BITMAP *lightning_sprite = NULL;
+
+    // Carregue os 13 frames do efeito de raio em um vetor
+    ALLEGRO_BITMAP *lightning_effect_frames[13] = {NULL};
+    char lightning_path[128];
+    for (int i = 0; i < 13; ++i)
+    {
+        snprintf(lightning_path, sizeof(lightning_path), "./imagens/lightning_v2_%d.png", i + 1);
+        lightning_effect_frames[i] = al_load_bitmap(lightning_path);
+        if (!lightning_effect_frames[i])
+        {
+            fprintf(stderr, "Erro ao carregar %s\n", lightning_path);
+        }
+    }
+
+    // Carrega a sprite do WalkieTalkie para o drop especial
+    ALLEGRO_BITMAP *walkie_talkie_sprite = al_load_bitmap("./imagens/WalkieTalkie.png");
+    if (!walkie_talkie_sprite) {
+        fprintf(stderr, "Erro ao carregar WalkieTalkie.png!\n");
+    }
+
+    int lightning_anim_frame = 0;
+    int lightning_anim_counter = 0;
+    const int lightning_anim_speed = 3; // ajuste a velocidade da animação
+
+    Lightning *lightning = NULL;
+    int boss_stun_timer = 0;
+    int can_use_lightning = 0; // Flag para mostrar mensagem de uso
 
     al_register_event_source(queue, al_get_keyboard_event_source());
     al_register_event_source(queue, al_get_display_event_source(display));
@@ -198,7 +229,8 @@ int main()
     int start_timer = 90; // 3 segundos a 30 FPS
     bool boss_loading = false;
     int boss_loading_timer = 0;
-    bool paused = false; // <-- Adiciona variável de pausa
+    bool paused = false;              // <-- Adiciona variável de pausa
+    ALLEGRO_KEYBOARD_STATE key_state; // Adicione esta linha
 
     while (running)
     {
@@ -237,6 +269,13 @@ int main()
                 break;
             case ALLEGRO_KEY_P:
                 paused = !paused;
+                break;
+            case ALLEGRO_KEY_R:
+                if (!player->gun->reloading && player->gun->ammo < player->gun->max_ammo)
+                {
+                    player->gun->reloading = 1;
+                    player->gun->reload_timer = 30; // 1 segundo a 30 FPS
+                }
                 break;
             }
         }
@@ -325,6 +364,7 @@ int main()
                 }
                 if (player->fire_cooldown > 0)
                     player->fire_cooldown--;
+                updatePistolReload(player->gun); // Atualiza recarga
                 positionUpdate(player, ground_y, ground_height);
                 bulletUpdate(player);
                 updateCharacterState(player);
@@ -429,6 +469,58 @@ int main()
                 }
                 redraw = true;
             }
+
+            al_get_keyboard_state(&key_state);
+
+            // Dropa o powerup de raio de forma aleatória quando um inimigo morre
+            if (!enemy && enemies_spawned > 0 && enemies_spawned <= max_enemies && !lightning)
+            {
+                if (rand() % 6 == 0) // 1 em 6 chance de drop
+                {
+                    int lx = rand() % (X_SCREEN - 32);
+                    int ly = ground_y - 32;
+                    lightning = createLightning(lx, ly, NULL); // sprite NULL, desenhamos um quadrado azul
+                }
+            }
+
+            // Checa se o player pegou o powerup
+            if (lightning && lightning->active && !lightning->collected)
+            {
+                if (checkLightningPickup(lightning, player))
+                    can_use_lightning = 1;
+            }
+
+            // Uso do powerup: tecla 'E' ativa o raio se coletado e boss existe e não está stunado
+            if (lightning && lightning->collected && boss && boss_stun_timer <= 0 && can_use_lightning)
+            {
+                if (al_key_down(&key_state, ALLEGRO_KEY_E))
+                {
+                    useLightningOnBoss(lightning, boss, &boss_stun_timer);
+                    can_use_lightning = 0;
+                }
+            }
+
+            // Atualiza stun do boss
+            if (boss_stun_timer > 0)
+            {
+                boss_stun_timer--;
+                boss->fire_cooldown = 10;
+                boss->state = 0;
+                // Avança a animação do raio
+                lightning_anim_counter++;
+                if (lightning_anim_counter >= lightning_anim_speed)
+                {
+                    lightning_anim_counter = 0;
+                    lightning_anim_frame++;
+                    if (lightning_anim_frame >= 13)
+                        lightning_anim_frame = 0;
+                }
+            }
+            else
+            {
+                lightning_anim_frame = 0;
+                lightning_anim_counter = 0;
+            }
         }
         if (redraw && al_is_event_queue_empty(queue))
         {
@@ -473,6 +565,50 @@ int main()
             if (enemy)
                 drawEnemy(enemy);
             draw_life_bar(player);
+            // Exibe munição e recarga
+            char ammo_str[32];
+            if (player->gun->reloading)
+                snprintf(ammo_str, sizeof(ammo_str), "Recarregando... (%d)", player->gun->reload_timer / 30 + 1);
+            else
+                snprintf(ammo_str, sizeof(ammo_str), "Munição: %d/%d", player->gun->ammo, player->gun->max_ammo);
+            al_draw_text(font, al_map_rgb(255, 255, 255), 20, 40, 0, ammo_str);
+
+            // Desenha o powerup se ativo (agora usando a sprite WalkieTalkie)
+            if (lightning && lightning->active && !lightning->collected)
+            {
+                int size = 32;
+                if (walkie_talkie_sprite) {
+                    int sprite_w = al_get_bitmap_width(walkie_talkie_sprite);
+                    int sprite_h = al_get_bitmap_height(walkie_talkie_sprite);
+                    al_draw_bitmap(walkie_talkie_sprite, lightning->x + (size-sprite_w)/2, lightning->y + (size-sprite_h)/2, 0);
+                } else {
+                    al_draw_filled_rectangle(lightning->x, lightning->y, lightning->x + size, lightning->y + size, al_map_rgb(0, 120, 255));
+                    al_draw_rectangle(lightning->x, lightning->y, lightning->x + size, lightning->y + size, al_map_rgb(255, 255, 255), 2);
+                }
+            }
+
+            // Mensagem para o player usar o poder
+            if (can_use_lightning && boss && boss_stun_timer <= 0)
+            {
+                al_draw_text(font, al_map_rgb(0, 200, 255), X_SCREEN / 2, 60, ALLEGRO_ALIGN_CENTER, "Pressione E para usar o poder de raio no boss!");
+            }
+
+            // Efeito visual de raio no boss quando stunado (animação)
+            if (boss_stun_timer > 0 && boss && lightning_effect_frames[0])
+            {
+                ALLEGRO_BITMAP *frame = lightning_effect_frames[lightning_anim_frame];
+                int frame_w = al_get_bitmap_width(frame);
+                int frame_h = al_get_bitmap_height(frame);
+                int bx = boss->x;
+                int by = boss->y - frame_h; // começa acima do boss
+                int boss_right = boss->x + boss->width;
+                // Repete o frame ao longo de toda a largura do boss
+                for (int x = bx; x < boss_right; x += frame_w)
+                {
+                    al_draw_bitmap(frame, x, by, 0);
+                }
+            }
+
             al_flip_display();
             redraw = false;
         }
@@ -492,6 +628,18 @@ int main()
         destroyEnemy(enemy);
         enemy = NULL;
     }
+    if (lightning)
+        destroyLightning(lightning);
+    if (lightning_sprite)
+        al_destroy_bitmap(lightning_sprite);
+    // Libere todos os frames do efeito de raio
+    for (int i = 0; i < 13; ++i)
+    {
+        if (lightning_effect_frames[i])
+            al_destroy_bitmap(lightning_effect_frames[i]);
+    }
+    if (walkie_talkie_sprite)
+        al_destroy_bitmap(walkie_talkie_sprite);
     //    if (boss)
     //    {
     //        destroyBossSprites(boss);
